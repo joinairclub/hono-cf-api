@@ -39,6 +39,10 @@ const respond = <T>(
 export const createApp = () => {
   const app = new Hono<{ Bindings: Env }>();
 
+  app.get("/ping", (c) => {
+    return c.json({ pong: true });
+  });
+
   app.get("/health", (c) => {
     return c.json({ ok: true });
   });
