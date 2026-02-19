@@ -4,6 +4,16 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-02-19",
   "compatibility_flags": ["nodejs_compat"],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "b51ed592790341cf82743edf9956d1bd"
+    }
+  ],
+  "placement": {
+    "mode": "targeted",
+    "region": "aws:us-east-1"
+  },
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
