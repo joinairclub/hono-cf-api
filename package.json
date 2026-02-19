@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "typegen": "wrangler types",
+    "typegen": "wrangler types --env-file /dev/null",
     "typecheck": "tsc --noEmit",
     "check": "bun run typegen && bun run typecheck",
     "db:generate": "drizzle-kit generate",
@@ -26,7 +26,6 @@
     "@types/node": "^25.3.0",
     "@types/pg": "^8.16.0",
     "drizzle-kit": "^0.31.9",
-    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
     "wrangler": "^4.67.0"
