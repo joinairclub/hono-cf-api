@@ -7,3 +7,5 @@ export const createDbClient = (connectionString: string) => {
   const db = drizzle(client, { schema });
   return { client, db };
 };
+
+export type Db = ReturnType<typeof createDbClient>['db'];

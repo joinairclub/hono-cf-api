@@ -1,69 +1,76 @@
 import { Hono } from 'hono';
+import type { Context } from 'hono';
+import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { zValidator } from '@hono/zod-validator';
-import { z } from 'zod';
-import { desc } from 'drizzle-orm';
+import { Result, isPanic } from './lib/result';
 import { createDbClient } from './db/client';
-import { posts as postsTable } from './db/schema';
+import { type AppError, DbConnectionError, toApiError } from './errors/app-error';
+import { createPost, listPosts } from './posts/repository';
+import { createPostSchema } from './posts/schema';
 
-const app = new Hono<{ Bindings: Env }>();
-const createPostSchema = z.object({
-  title: z.string().min(1),
-  body: z.string().min(1),
-  published: z.boolean().optional(),
-});
+const connect = (connectionString: string) =>
+  Result.tryPromise({
+    try: () => {
+      const { client, db } = createDbClient(connectionString);
+      return client.connect().then(() => db);
+    },
+    catch: (cause) => new DbConnectionError({ cause }),
+  });
 
-app.get('/health', (c) => {
-  return c.json({ ok: true });
-});
+const respond = <T>(c: Context, result: Result<T, AppError>, status: ContentfulStatusCode = 200) =>
+  Result.match<T, AppError, Response>(result, {
+    ok: (value) => c.json({ data: value, error: null }, status),
+    err: (error) => {
+      const apiError = toApiError(error);
+      return c.json({ data: null, error: apiError.error }, apiError.status);
+    },
+  });
 
-app.get('/api/posts', async (c) => {
-  const { client, db } = createDbClient(c.env.HYPERDRIVE.connectionString);
-  try {
-    await client.connect();
-    const rows = await db
-      .select()
-      .from(postsTable)
-      .orderBy(desc(postsTable.id))
-      .limit(20);
-    return c.json({ posts: rows });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown database error';
-    return c.json({ error: message }, 500);
-  } finally {
-    c.executionCtx.waitUntil(client.end());
-  }
-});
+export const createApp = () => {
+  const app = new Hono<{ Bindings: Env }>();
 
-app.post('/api/posts', zValidator('json', createPostSchema), async (c) => {
-  const { client, db } = createDbClient(c.env.HYPERDRIVE.connectionString);
-  try {
-    await client.connect();
+  app.get('/health', (c) => {
+    return c.json({ ok: true });
+  });
+
+  app.get('/api/posts', async (c) => {
+    const result = await Result.gen(async function* () {
+      const db = yield* Result.await(connect(c.env.HYPERDRIVE.connectionString));
+      const posts = yield* Result.await(listPosts(db));
+      return Result.ok(posts);
+    });
+
+    return respond(c, result);
+  });
+
+  app.post('/api/posts', zValidator('json', createPostSchema), async (c) => {
     const payload = c.req.valid('json');
-    const [created] = await db
-      .insert(postsTable)
-      .values({
-        title: payload.title,
-        body: payload.body,
-        published: payload.published ?? false,
-      })
-      .returning();
 
-    return c.json({ post: created }, 201);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown database error';
-    return c.json({ error: message }, 500);
-  } finally {
-    c.executionCtx.waitUntil(client.end());
-  }
-});
+    const result = await Result.gen(async function* () {
+      const db = yield* Result.await(connect(c.env.HYPERDRIVE.connectionString));
+      const post = yield* Result.await(createPost(db, payload));
+      return Result.ok(post);
+    });
 
-app.notFound((c) => {
-  return c.json({ error: 'Not Found' }, 404);
-});
+    return respond(c, result, 201);
+  });
 
-app.onError((err, c) => {
-  console.error('Unhandled error', err);
-  return c.json({ error: 'Internal Server Error' }, 500);
-});
+  app.notFound((c) => {
+    return c.json({ data: null, error: { message: 'Not Found', code: 'NotFound' } }, 404);
+  });
+
+  app.onError((err, c) => {
+    if (isPanic(err)) {
+      console.error('Panic defect', err.toJSON());
+    } else {
+      console.error('Unhandled error', err);
+    }
+    return c.json({ data: null, error: { message: 'Internal Server Error', code: 'InternalError' } }, 500);
+  });
+
+  return app;
+};
+
+const app = createApp();
 
 export default app;
