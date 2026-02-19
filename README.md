@@ -74,11 +74,5 @@ curl http://127.0.0.1:8787/api/posts
 
 ## Deployment Model
 
-- Local `bun run deploy` is intentionally blocked.
-- Deployments run in GitHub Actions only:
-  - PR checks: `.github/workflows/ci.yml`
-  - Deploy on merge to `main`: `.github/workflows/deploy.yml`
-- Required GitHub secrets for deploy workflow:
-  - `MIGRATION_DATABASE_URL`
-  - `CLOUDFLARE_ACCOUNT_ID`
-  - `CLOUDFLARE_API_TOKEN`
+- PR checks run in GitHub Actions: `.github/workflows/ci.yml`
+- Deployment is handled outside GitHub Actions (for example, Cloudflare Workers Builds).

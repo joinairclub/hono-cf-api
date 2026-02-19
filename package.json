@@ -6,8 +6,6 @@
   "scripts": {
     "dev": "wrangler dev --env-file .env.local",
     "dev:remote": "wrangler dev --remote",
-    "deploy": "echo 'Deploy is CI-only. Merge a PR to main to deploy.' && exit 1",
-    "deploy:ci": "wrangler deploy",
     "typegen": "wrangler types --env-file /dev/null",
     "typecheck": "tsc --noEmit",
     "check": "bun run typegen && bun run typecheck",
