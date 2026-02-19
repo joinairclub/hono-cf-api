@@ -4,7 +4,7 @@ import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { zValidator } from '@hono/zod-validator';
 import { Result, isPanic } from './lib/result';
 import { createDbClient } from './db/client';
-import { type AppError, DbConnectionError, toApiError } from './errors/app-error';
+import { type AppError, DbConnectionError, NotFoundError, InternalError, toApiError } from './errors/app-error';
 import { createPost, listPosts } from './posts/repository';
 import { createPostSchema } from './posts/schema';
 
@@ -56,7 +56,8 @@ export const createApp = () => {
   });
 
   app.notFound((c) => {
-    return c.json({ data: null, error: { message: 'Not Found', code: 'NotFound' } }, 404);
+    const { status, error } = toApiError(new NotFoundError({ message: 'Not Found' }));
+    return c.json({ data: null, error }, status);
   });
 
   app.onError((err, c) => {
@@ -65,7 +66,8 @@ export const createApp = () => {
     } else {
       console.error('Unhandled error', err);
     }
-    return c.json({ data: null, error: { message: 'Internal Server Error', code: 'InternalError' } }, 500);
+    const { status, error } = toApiError(new InternalError({ message: 'Internal Server Error' }));
+    return c.json({ data: null, error }, status);
   });
 
   return app;

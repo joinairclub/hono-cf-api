@@ -22,13 +22,21 @@ export class DbQueryError extends TaggedError('DbQueryError')<{
   }
 }
 
-export type AppError = DbConnectionError | DbQueryError;
+export class NotFoundError extends TaggedError('NotFoundError')<{
+  message: string;
+}>() {}
+
+export class InternalError extends TaggedError('InternalError')<{
+  message: string;
+}>() {}
+
+export type AppError = DbConnectionError | DbQueryError | NotFoundError | InternalError;
 
 export type ApiErrorBody = { message: string; code: AppError['_tag'] };
 
-export const toApiError = (
+export function toApiError(
   error: AppError,
-): { status: ContentfulStatusCode; error: ApiErrorBody } => {
+): { status: ContentfulStatusCode; error: ApiErrorBody } {
   return matchError(error, {
     DbConnectionError: (e) => ({
       status: 500 as const,
@@ -38,5 +46,13 @@ export const toApiError = (
       status: 500 as const,
       error: { message: 'Database query failed', code: e._tag },
     }),
+    NotFoundError: (e) => ({
+      status: 404 as const,
+      error: { message: e.message, code: e._tag },
+    }),
+    InternalError: (e) => ({
+      status: 500 as const,
+      error: { message: e.message, code: e._tag },
+    }),
   });
-};
+}
