@@ -56,6 +56,14 @@ beforeEach(() => {
 });
 
 describe('api routes', () => {
+  it('returns root', async () => {
+    const app = createApp();
+    const response = await app.request('/');
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ name: 'hono-cf-api', ok: true });
+  });
+
   it('returns health', async () => {
     const app = createApp();
     const response = await app.request('/health');
