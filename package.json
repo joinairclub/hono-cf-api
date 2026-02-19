@@ -1,0 +1,21 @@
+{
+  "name": "hono-cf-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typegen": "wrangler types",
+    "typecheck": "tsc --noEmit",
+    "check": "bun run typegen && bun run typecheck"
+  },
+  "dependencies": {
+    "hono": "^4.12.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.67.0"
+  }
+}
