@@ -1,6 +1,13 @@
 import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
+import { z } from 'zod';
 
 const app = new Hono();
+const createPostSchema = z.object({
+  title: z.string().min(1),
+  body: z.string().min(1),
+  published: z.boolean().optional(),
+});
 
 app.get('/', (c) => {
   return c.json({
@@ -17,6 +24,17 @@ app.get('/health', (c) => {
 app.post('/api/echo', async (c) => {
   const body = await c.req.json<unknown>();
   return c.json({ received: body });
+});
+
+app.post('/api/posts', zValidator('json', createPostSchema), (c) => {
+  const post = c.req.valid('json');
+  return c.json(
+    {
+      id: crypto.randomUUID(),
+      ...post,
+    },
+    201
+  );
 });
 
 app.notFound((c) => {
