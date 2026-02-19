@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import { defineConfig } from 'drizzle-kit';
 
 if (!process.env.MIGRATION_DATABASE_URL) {
