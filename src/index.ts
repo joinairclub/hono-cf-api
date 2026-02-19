@@ -13,6 +13,8 @@ import {
 } from "./errors/app-error";
 import { createPost, listPosts } from "./posts/repository";
 import { createPostSchema } from "./posts/schema";
+import { growiBackfillSchema } from "./growi/schema";
+import { syncGrowiUserContents } from "./growi/sync";
 
 const connect = (connectionString: string) =>
   Result.tryPromise({
@@ -35,6 +37,13 @@ const respond = <T>(
       return c.json({ data: null, error: apiError.error }, apiError.status);
     },
   });
+
+const formatAsMmDdYyyy = (date: Date): string => {
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const year = date.getUTCFullYear();
+  return `${month}/${day}/${year}`;
+};
 
 export const createApp = () => {
   const app = new Hono<{ Bindings: Env }>();
@@ -68,6 +77,36 @@ export const createApp = () => {
 
     return respond(c, result, 201);
   });
+
+  app.post(
+    "/internal/growi/backfill",
+    zValidator("json", growiBackfillSchema),
+    async (c) => {
+      const payload = c.req.valid("json");
+      const endDate = payload.endDate ?? formatAsMmDdYyyy(new Date());
+      const startDate = payload.startDate ?? "01/01/2025";
+      const perPage = payload.perPage ?? 1000;
+
+      const result = await Result.gen(async function* () {
+        const db = yield* Result.await(
+          connect(c.env.HYPERDRIVE.connectionString),
+        );
+
+        const syncResult = yield* Result.await(
+          syncGrowiUserContents(db, c.env, {
+            startDate,
+            endDate,
+            perPage,
+            maxPages: payload.maxPages,
+          }),
+        );
+
+        return Result.ok(syncResult);
+      });
+
+      return respond(c, result);
+    },
+  );
 
   app.notFound((c) => {
     const { status, error } = toApiError(

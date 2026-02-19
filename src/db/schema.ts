@@ -61,7 +61,6 @@ export const srcGrowiPostMetrics = pgTable(
     shareCount: bigint('share_count', { mode: 'number' }).notNull(),
     savesCount: bigint('saves_count', { mode: 'number' }),
     engagementRate: numeric('engagement_rate', { precision: 10, scale: 6 }),
-    rawJson: jsonb('raw_json'),
     pulledAt: timestamp('pulled_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
