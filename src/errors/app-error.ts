@@ -48,7 +48,7 @@ export function toApiError(
     }),
     NotFoundError: (e) => ({
       status: 404 as const,
-      error: { message: e.message, code: e._tag },
+      error: { message: 'Not Found', code: e._tag },
     }),
     InternalError: (e) => ({
       status: 500 as const,
