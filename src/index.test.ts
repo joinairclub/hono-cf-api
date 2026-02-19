@@ -56,6 +56,14 @@ beforeEach(() => {
 });
 
 describe('api routes', () => {
+  it('returns ping', async () => {
+    const app = createApp();
+    const response = await app.request('/ping');
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ pong: true });
+  });
+
   it('returns health', async () => {
     const app = createApp();
     const response = await app.request('/health');
