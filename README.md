@@ -112,7 +112,11 @@ Notes:
 - `bun run db:migrate` - run local migrations
 - `bun run db:push` - push schema to local DB
 - `bun run db:studio` - open Drizzle Studio against local DB
+- `bun run test` - run project tests with Vitest (`src/**/*.test.ts`)
+- `bun run test:watch` - run tests in watch mode
 - `bun run check` - `typegen` + `typecheck`
+
+Use `bun run test` instead of `bun test` to avoid executing vendored tests under `opensrc/`.
 
 ## Deployment Model
 
