@@ -9,6 +9,6 @@ export {
   UnhandledException,
   Ok,
   Err,
-} from 'better-result';
+} from "better-result";
 
-export type { InferOk, InferErr } from 'better-result';
+export type { InferOk, InferErr } from "better-result";

@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from './db/client';
-import { DbConnectionError, DbQueryError } from './errors/app-error';
-import { Result } from './lib/result';
+import { DbConnectionError, DbQueryError } from './shared/errors/app-error';
+import { Result } from './shared/result';
 
 const mockDb = {} as Db;
 const mockClient = {
@@ -19,7 +19,7 @@ vi.mock('./db/client', () => ({
   createDbClient: mocks.createDbClient,
 }));
 
-vi.mock('./posts/repository', () => ({
+vi.mock('./features/posts/repository', () => ({
   listPosts: mocks.listPosts,
   createPost: mocks.createPost,
 }));
@@ -53,6 +53,10 @@ beforeEach(() => {
   mocks.createPost.mockResolvedValue(
     Result.err(new DbQueryError({ operation: 'create post', cause: new Error('not configured') })),
   );
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe('api routes', () => {
