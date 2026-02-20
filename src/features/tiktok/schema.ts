@@ -1,18 +1,12 @@
 import { z } from "zod";
 
-const isTikTokHost = (value: string) => {
-  try {
-    const hostname = new URL(value).hostname.toLowerCase();
-    return hostname === "tiktok.com" || hostname.endsWith(".tiktok.com");
-  } catch {
-    return false;
-  }
-};
-
-export const tiktokDownloadQuerySchema = z.object({
-  share_url: z
-    .url()
-    .refine(isTikTokHost, { message: "share_url must be a TikTok URL" }),
+const tiktokShareUrlSchema = z.url({
+  protocol: /^https?$/,
+  hostname: /(^|\.)tiktok\.com$/i,
 });
 
-export type TikTokDownloadQuery = z.infer<typeof tiktokDownloadQuerySchema>;
+export const tiktokShareUrlQuerySchema = z.object({
+  share_url: tiktokShareUrlSchema,
+});
+
+export type TikTokShareUrlQuery = z.infer<typeof tiktokShareUrlQuerySchema>;

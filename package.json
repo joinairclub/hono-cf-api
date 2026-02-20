@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "wrangler dev --env-file .env.local",
     "dev:remote": "wrangler dev --remote",
-    "typegen": "wrangler types --env-file /dev/null",
+    "typegen": "wrangler types --env-file .typegen.env",
     "typecheck": "tsc --noEmit",
     "check": "bun run typegen && bun run typecheck",
     "db:start": "docker compose up -d --wait postgres",

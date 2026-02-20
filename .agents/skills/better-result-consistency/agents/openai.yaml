@@ -1,0 +1,4 @@
+interface:
+  display_name: "Better Result Consistency"
+  short_description: "Audit Result patterns and typed errors"
+  default_prompt: "Use $better-result-consistency to audit and refactor this codebase to follow better-result patterns."

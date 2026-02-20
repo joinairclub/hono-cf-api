@@ -5,36 +5,42 @@ import { DbQueryError } from "../../shared/errors/app-error";
 import { Result } from "../../shared/result";
 import type { CreatePostInput } from "./schema";
 
-export const listPosts = async (
+export const listPosts = (
   db: Db,
-): Promise<Result<Post[], DbQueryError>> => {
-  return Result.tryPromise({
+): Promise<Result<Post[], DbQueryError>> =>
+  Result.tryPromise({
     try: () => db.select().from(postsTable).orderBy(desc(postsTable.id)).limit(20),
     catch: (cause) => new DbQueryError({ operation: "list posts", cause }),
   });
-};
 
-export const createPost = async (
+export const createPost = (
   db: Db,
   input: CreatePostInput,
-): Promise<Result<Post, DbQueryError>> => {
-  return Result.tryPromise({
-    try: async () => {
-      const [created] = await db
+): Promise<Result<Post, DbQueryError>> =>
+  Result.tryPromise({
+    try: () =>
+      db
         .insert(postsTable)
         .values({
           title: input.title,
           body: input.body,
           published: input.published ?? false,
         })
-        .returning();
+        .returning(),
+    catch: (cause) => new DbQueryError({ operation: "create post", cause }),
+  }).then((result) =>
+    result.andThen((rows) => {
+      const created = rows[0];
 
       if (!created) {
-        throw new Error("Insert returned no row");
+        return Result.err(
+          new DbQueryError({
+            operation: "create post",
+            cause: new Error("Insert returned no row"),
+          }),
+        );
       }
 
-      return created;
-    },
-    catch: (cause) => new DbQueryError({ operation: "create post", cause }),
-  });
-};
+      return Result.ok(created);
+    }),
+  );
