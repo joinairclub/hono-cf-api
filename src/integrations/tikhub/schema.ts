@@ -2,44 +2,39 @@ import { z } from "zod";
 import { UpstreamResponseError } from "../../shared/errors/app-error";
 import { Result } from "../../shared/result";
 
-const numericFieldSchema = z.preprocess(
-  (value) => {
-    if (typeof value === "number") {
-      return Number.isFinite(value) ? value : undefined;
-    }
+const normalizeNumberValue = (value: unknown): number | undefined => {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : undefined;
+  }
 
-    if (typeof value === "string") {
-      const trimmed = value.trim();
-      if (!trimmed) {
-        return undefined;
-      }
-
-      const parsed = Number(trimmed);
-      return Number.isFinite(parsed) ? trimmed : undefined;
-    }
-
-    if (value === null || value === undefined) {
-      return undefined;
-    }
-
+  if (typeof value !== "string") {
     return undefined;
-  },
-  z.coerce.number(),
-);
+  }
 
-const stringFieldSchema = z
-  .preprocess((value) => {
-    if (typeof value === "string") {
-      const trimmed = value.trim();
-      return trimmed.length > 0 ? trimmed : undefined;
-    }
-
-    if (typeof value === "number") {
-      return Number.isFinite(value) ? value : undefined;
-    }
-
+  const trimmed = value.trim();
+  if (!trimmed) {
     return undefined;
-  }, z.coerce.string().trim().min(1));
+  }
+
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const normalizeStringValue = (value: unknown): string | undefined => {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? String(value) : undefined;
+  }
+
+  return undefined;
+};
+
+const numericFieldSchema = z.preprocess(normalizeNumberValue, z.number());
+const stringFieldSchema = z.preprocess(normalizeStringValue, z.string().min(1));
 
 const tikhubAddressSchema = z.looseObject({
   url_list: z.array(z.string()).optional(),
@@ -121,8 +116,9 @@ export type TikHubVideoInfo = {
 const getFirstUrl = (
   address: z.infer<typeof tikhubAddressSchema> | undefined,
 ): string | null => {
-  const url = address?.url_list?.find((value) => value.trim().length > 0);
-  return url?.trim() ?? null;
+  const firstNonEmpty =
+    address?.url_list?.map((value) => value.trim()).find((value) => value.length > 0) ?? null;
+  return firstNonEmpty;
 };
 
 const extractHashtagsFromDescription = (description: string | null): string[] => {
