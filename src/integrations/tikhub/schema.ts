@@ -37,6 +37,7 @@ const numericFieldSchema = z.preprocess(normalizeNumberValue, z.number());
 const stringFieldSchema = z.preprocess(normalizeStringValue, z.string().min(1));
 
 const tikhubAddressSchema = z.looseObject({
+  uri: z.string().optional(),
   url_list: z.array(z.string()).optional(),
 });
 
@@ -48,6 +49,10 @@ const tikhubVideoSchema = z.looseObject({
   cover: tikhubAddressSchema.optional(),
   origin_cover: tikhubAddressSchema.optional(),
   dynamic_cover: tikhubAddressSchema.optional(),
+});
+
+const tikhubMusicSchema = z.looseObject({
+  play_url: tikhubAddressSchema.optional(),
 });
 
 const tikhubHashtagSchema = z.looseObject({
@@ -76,6 +81,8 @@ const tikhubDetailSchema = z.looseObject({
   cha_list: z.array(tikhubHashtagSchema).optional(),
   author: tikhubAuthorSchema.optional(),
   statistics: tikhubStatisticsSchema.optional(),
+  music: tikhubMusicSchema.optional(),
+  added_sound_music_info: tikhubMusicSchema.optional(),
   video: tikhubVideoSchema.optional(),
 });
 
@@ -110,6 +117,7 @@ export interface TikHubVideoInfo {
     shareCount: number | null;
   };
   thumbnailUrl: string | null;
+  audioUrl: string | null;
   downloadUrl: string;
 }
 
@@ -118,7 +126,13 @@ const getFirstUrl = (
 ): string | null => {
   const firstNonEmpty =
     address?.url_list?.map((value) => value.trim()).find((value) => value.length > 0) ?? null;
-  return firstNonEmpty;
+
+  if (firstNonEmpty) {
+    return firstNonEmpty;
+  }
+
+  const uri = address?.uri?.trim();
+  return uri && uri.length > 0 ? uri : null;
 };
 
 const extractHashtagsFromDescription = (description: string | null): string[] => {
@@ -198,6 +212,9 @@ export const extractTikHubVideoInfo = (
 
   const durationMs =
     normalizeDurationMs(video?.duration) ?? normalizeDurationMs(firstDetail?.duration);
+  const audioUrl =
+    getFirstUrl(firstDetail?.music?.play_url) ??
+    getFirstUrl(firstDetail?.added_sound_music_info?.play_url);
 
   return Result.ok({
     awemeId,
@@ -220,6 +237,7 @@ export const extractTikHubVideoInfo = (
       getFirstUrl(video?.origin_cover) ??
       getFirstUrl(video?.cover) ??
       getFirstUrl(video?.dynamic_cover),
+    audioUrl,
     downloadUrl,
   });
 };
