@@ -1,8 +1,8 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { respond } from "../../app/respond";
-import { resolveTikTokDownload, resolveTikTokInfo } from "./service";
 import { tiktokShareUrlQuerySchema } from "./schema";
+import { resolveTikTokDownload, resolveTikTokInfo } from "./service";
 
 export const tiktokDownloadRoutes = new Hono<{ Bindings: Env }>();
 

@@ -1,6 +1,7 @@
 import { desc } from "drizzle-orm";
 import type { Db } from "../../db/client";
-import { posts as postsTable, type Post } from "../../db/schema";
+import { posts as postsTable } from "../../db/schema";
+import type { Post } from "../../db/schema";
 import { DbQueryError } from "../../shared/errors/app-error";
 import { Result } from "../../shared/result";
 import type { CreatePostInput } from "./schema";
@@ -30,7 +31,7 @@ export const createPost = (
     catch: (cause) => new DbQueryError({ operation: "create post", cause }),
   }).then((result) =>
     result.andThen((rows) => {
-      const created = rows[0];
+      const created = rows.at(0);
 
       if (!created) {
         return Result.err(

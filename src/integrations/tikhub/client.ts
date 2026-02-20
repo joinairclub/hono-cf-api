@@ -6,9 +6,8 @@ import { Result } from "../../shared/result";
 import {
   extractTikHubDownloadInfo,
   extractTikHubVideoInfo,
-  type TikHubDownloadInfo,
-  type TikHubVideoInfo,
 } from "./schema";
+import type { TikHubDownloadInfo, TikHubVideoInfo } from "./schema";
 
 const TIKHUB_DOWNLOAD_ENDPOINT =
   "https://api.tikhub.io/api/v1/tiktok/app/v3/fetch_one_video_by_share_url";
@@ -58,7 +57,7 @@ const fetchTikHubPayload = async (
     }
 
     const payload = yield* Result.await(
-      tryTikHubRequest(() => response.json() as Promise<unknown>),
+      tryTikHubRequest(() => response.json()),
     );
 
     return Result.ok(payload);

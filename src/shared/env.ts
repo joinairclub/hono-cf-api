@@ -5,7 +5,7 @@ export const getRequiredBindingString = (
   env: object,
   key: string,
 ): Result<string, ConfigurationError> => {
-  const value = Reflect.get(env, key);
+  const value: unknown = Reflect.get(env, key);
   if (typeof value !== "string") {
     return Result.err(new ConfigurationError({ message: `Missing required binding: ${key}` }));
   }

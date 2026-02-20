@@ -87,12 +87,12 @@ const tikhubResponseSchema = z.looseObject({
   }),
 });
 
-export type TikHubDownloadInfo = {
+export interface TikHubDownloadInfo {
   awemeId: string;
   downloadUrl: string;
-};
+}
 
-export type TikHubVideoInfo = {
+export interface TikHubVideoInfo {
   awemeId: string;
   description: string | null;
   durationMs: number | null;
@@ -111,7 +111,7 @@ export type TikHubVideoInfo = {
   };
   thumbnailUrl: string | null;
   downloadUrl: string;
-};
+}
 
 const getFirstUrl = (
   address: z.infer<typeof tikhubAddressSchema> | undefined,

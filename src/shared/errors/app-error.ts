@@ -62,7 +62,10 @@ export type AppError =
   | UpstreamRequestError
   | UpstreamResponseError;
 
-export type ApiErrorBody = { message: string; code: AppError["_tag"] };
+export interface ApiErrorBody {
+  message: string;
+  code: AppError["_tag"];
+}
 
 export function toApiError(
   error: AppError,

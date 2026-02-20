@@ -1,22 +1,22 @@
 import {
   fetchTikHubDownloadInfo,
   fetchTikHubVideoInfo,
-  type TikHubClientError,
 } from "../../integrations/tikhub/client";
-import type { ConfigurationError } from "../../shared/errors/app-error";
+import type { TikHubClientError } from "../../integrations/tikhub/client";
 import { getRequiredBindingString } from "../../shared/env";
-import { Result } from "../../shared/result";
+import type { ConfigurationError } from "../../shared/errors/app-error";
+import type { Result } from "../../shared/result";
 
-export type TikTokDownloadResult = {
+export interface TikTokDownloadResult {
   provider: "tiktok";
   source: "tikhub";
   shareUrl: string;
   videoId: string;
   downloadUrl: string;
   status: "resolved";
-};
+}
 
-export type TikTokInfoResult = {
+export interface TikTokInfoResult {
   provider: "tiktok";
   source: "tikhub";
   shareUrl: string;
@@ -41,7 +41,7 @@ export type TikTokInfoResult = {
     thumbnailUrl: string | null;
     downloadUrl: string;
   };
-};
+}
 
 export type TikTokServiceError = ConfigurationError | TikHubClientError;
 

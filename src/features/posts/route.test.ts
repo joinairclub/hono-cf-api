@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import type { Db } from "../../db/client";
 import { DbQueryError } from "../../shared/errors/app-error";
 import { Result } from "../../shared/result";
@@ -45,6 +46,16 @@ const postPayload = {
   published: true,
 };
 
+const listPostsResponseSchema = z.object({
+  data: z.array(z.object({ title: z.string() })),
+  error: z.null(),
+});
+
+const createPostResponseSchema = z.object({
+  data: z.object({ title: z.string() }),
+  error: z.null(),
+});
+
 const createTestApp = () => {
   const app = new Hono<{ Bindings: Env }>();
   app.route("/api/posts", postsRoutes);
@@ -82,7 +93,7 @@ describe("posts routes", () => {
     );
 
     const response = await app.request("/api/posts", undefined, mockEnv, mockExecutionCtx);
-    const body = (await response.json()) as { data: Array<{ title: string }>; error: null };
+    const body = listPostsResponseSchema.parse(await response.json());
 
     expect(response.status).toBe(200);
     expect(body.error).toBeNull();
@@ -123,7 +134,7 @@ describe("posts routes", () => {
       mockEnv,
       mockExecutionCtx,
     );
-    const body = (await response.json()) as { data: { title: string }; error: null };
+    const body = createPostResponseSchema.parse(await response.json());
 
     expect(response.status).toBe(201);
     expect(body.error).toBeNull();

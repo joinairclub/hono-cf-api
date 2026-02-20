@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import { tiktokDownloadRoutes } from "./route";
 
 const createTestApp = () => {
@@ -20,6 +21,46 @@ const mockExecutionCtx = {
   passThroughOnException: vi.fn(),
   props: {},
 };
+
+const tiktokDownloadResponseSchema = z.object({
+  data: z.object({
+    provider: z.string(),
+    source: z.string(),
+    shareUrl: z.string(),
+    videoId: z.string(),
+    downloadUrl: z.string(),
+    status: z.string(),
+  }),
+  error: z.null(),
+});
+
+const tiktokInfoResponseSchema = z.object({
+  data: z.object({
+    provider: z.string(),
+    status: z.string(),
+    video: z.object({
+      id: z.string(),
+      description: z.string(),
+      durationMs: z.number(),
+      createdAt: z.string(),
+      hashtags: z.array(z.string()),
+      author: z.object({
+        userId: z.string(),
+        username: z.string(),
+        nickname: z.string(),
+      }),
+      stats: z.object({
+        playCount: z.number(),
+        likeCount: z.number(),
+        commentCount: z.number(),
+        shareCount: z.number(),
+      }),
+      thumbnailUrl: z.string(),
+      downloadUrl: z.string(),
+    }),
+  }),
+  error: z.null(),
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -57,17 +98,7 @@ describe("tiktok routes", () => {
       mockEnv,
       mockExecutionCtx,
     );
-    const body = (await response.json()) as {
-      data: {
-        provider: string;
-        source: string;
-        shareUrl: string;
-        videoId: string;
-        downloadUrl: string;
-        status: string;
-      };
-      error: null;
-    };
+    const body = tiktokDownloadResponseSchema.parse(await response.json());
 
     expect(response.status).toBe(200);
     expect(body.error).toBeNull();
@@ -153,33 +184,7 @@ describe("tiktok routes", () => {
       mockEnv,
       mockExecutionCtx,
     );
-    const body = (await response.json()) as {
-      data: {
-        provider: string;
-        status: string;
-        video: {
-          id: string;
-          description: string;
-          durationMs: number;
-          createdAt: string;
-          hashtags: string[];
-          author: {
-            userId: string;
-            username: string;
-            nickname: string;
-          };
-          stats: {
-            playCount: number;
-            likeCount: number;
-            commentCount: number;
-            shareCount: number;
-          };
-          thumbnailUrl: string;
-          downloadUrl: string;
-        };
-      };
-      error: null;
-    };
+    const body = tiktokInfoResponseSchema.parse(await response.json());
 
     expect(response.status).toBe(200);
     expect(body.error).toBeNull();
