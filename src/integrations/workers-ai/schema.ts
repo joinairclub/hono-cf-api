@@ -50,7 +50,7 @@ const workersAiNormalizedSegmentSchema = z
     }
   });
 
-export type WorkersAiSegment = z.infer<typeof workersAiNormalizedSegmentSchema>;
+type WorkersAiSegment = z.infer<typeof workersAiNormalizedSegmentSchema>;
 
 const extractSegmentLevelFallback = (
   segment: z.infer<typeof workersAiSegmentSchema>,
