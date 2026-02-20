@@ -30,13 +30,42 @@ export class InternalError extends TaggedError("InternalError")<{
   message: string;
 }>() {}
 
+export class ConfigurationError extends TaggedError("ConfigurationError")<{
+  message: string;
+}>() {}
+
+export class UpstreamRequestError extends TaggedError("UpstreamRequestError")<{
+  service: string;
+  message: string;
+  cause: unknown;
+}>() {
+  constructor(args: { service: string; cause: unknown; message?: string }) {
+    const msg = args.cause instanceof Error ? args.cause.message : String(args.cause);
+    super({
+      ...args,
+      message: args.message ?? `Upstream request to ${args.service} failed: ${msg}`,
+    });
+  }
+}
+
+export class UpstreamResponseError extends TaggedError("UpstreamResponseError")<{
+  service: string;
+  message: string;
+}>() {}
+
 export type AppError =
   | DbConnectionError
   | DbQueryError
   | NotFoundError
-  | InternalError;
+  | InternalError
+  | ConfigurationError
+  | UpstreamRequestError
+  | UpstreamResponseError;
 
-export type ApiErrorBody = { message: string; code: AppError["_tag"] };
+export interface ApiErrorBody {
+  message: string;
+  code: AppError["_tag"];
+}
 
 export function toApiError(
   error: AppError,
@@ -56,7 +85,19 @@ export function toApiError(
     }),
     InternalError: (e) => ({
       status: 500 as const,
-      error: { message: e.message, code: e._tag },
+      error: { message: "Internal Server Error", code: e._tag },
+    }),
+    ConfigurationError: (e) => ({
+      status: 500 as const,
+      error: { message: "Server configuration error", code: e._tag },
+    }),
+    UpstreamRequestError: (e) => ({
+      status: 502 as const,
+      error: { message: "Upstream request failed", code: e._tag },
+    }),
+    UpstreamResponseError: (e) => ({
+      status: 502 as const,
+      error: { message: "Upstream response failed", code: e._tag },
     }),
   });
 }

@@ -1,6 +1,7 @@
 import { DbConnectionError } from "../shared/errors/app-error";
 import { Result } from "../shared/result";
-import { createDbClient, type Db } from "./client";
+import { createDbClient } from "./client";
+import type { Db } from "./client";
 
 export const connectDb = (
   connectionString: string,
