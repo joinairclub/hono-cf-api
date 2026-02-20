@@ -2,25 +2,9 @@ import { sql } from 'drizzle-orm';
 import { DbQueryError } from '../errors/app-error';
 import type { Db } from '../db/client';
 import { srcGrowiPostMetrics, srcGrowiPosts } from '../db/schema';
+import { isoToDate, unixSecondsToDate } from '../lib/date';
 import { Result } from '../lib/result';
 import type { GrowiUserContentRow } from './private-client';
-
-const unixSecondsToDate = (value: number | null): Date | null => {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
-    return null;
-  }
-
-  return new Date(value * 1000);
-};
-
-const isoToDate = (value: string | null): Date | null => {
-  if (!value) {
-    return null;
-  }
-
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
 
 const parseEngagementRate = (
   value: string | number | null | undefined,
@@ -66,8 +50,9 @@ export const upsertGrowiPage = async (
         profileShareUrl: row.profile_share_url,
         campaignId: row.campaign_id,
         campaignName: row.campaign_name,
-        createTime: unixSecondsToDate(row.create_time),
-        updatedAt: isoToDate(row.updated_at),
+        createTime:
+          row.create_time == null ? null : unixSecondsToDate(row.create_time),
+        updatedAt: row.updated_at == null ? null : isoToDate(row.updated_at),
         rawJson: row,
         firstSeenAt: now,
         lastSeenAt: now,

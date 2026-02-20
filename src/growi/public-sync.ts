@@ -1,11 +1,13 @@
 import type { Db } from '../db/client';
-import { Result } from '../lib/result';
 import { DbQueryError } from '../errors/app-error';
+import { Result } from '../lib/result';
+import type { GrowiUserContentRow } from './private-client';
 import {
-  fetchGrowiUserContentsPage,
-  getGrowiApiConfig,
-  GrowiApiError,
-} from './private-client';
+  fetchGrowiTopPostsByViewsPage,
+  getGrowiPublicApiConfig,
+  GrowiPublicTopPost,
+} from './public-client';
+import { GrowiApiError } from './private-client';
 import { upsertGrowiPage } from './repository';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -29,15 +31,44 @@ const toGrowiApiError = (cause: unknown): GrowiApiError => {
 
   return new GrowiApiError({
     status: 0,
-    message: cause instanceof Error ? cause.message : `Growi request failed: ${String(cause)}`,
+    message:
+      cause instanceof Error ? cause.message : `Growi public request failed: ${String(cause)}`,
     cause,
   });
 };
 
-export type GrowiSyncSummary = {
+const toInternalPostRow = (post: GrowiPublicTopPost): GrowiUserContentRow => {
+  return {
+    id: post.id,
+    share_url: post.share_url,
+    platform: post.platform,
+    content_type: post.content_type ?? null,
+    external_id: post.external_id ?? null,
+    title: post.title ?? null,
+    connected_account_id: null,
+    connected_account_username: post.username ?? null,
+    profile_share_url: post.profile_share_url ?? null,
+    campaign_id: null,
+    campaign_name: null,
+    create_time: null,
+    updated_at: null,
+    view_count: post.metrics.views,
+    like_count: post.metrics.likes,
+    comment_count: post.metrics.comments,
+    share_count: post.metrics.shares,
+    saves_count: null,
+    engagement_rate: null,
+    gmv: post.gmv ?? null,
+    raw_source: 'public_top_posts_by_views',
+  };
+};
+
+export type GrowiPublicSyncSummary = {
   startDate: string;
   endDate: string;
+  limit: number;
   perPage: number;
+  includeGmv: boolean;
   pagesFetched: number;
   rowsFetched: number;
   rowCount: number;
@@ -45,23 +76,25 @@ export type GrowiSyncSummary = {
   completedAt: string;
 };
 
-export const syncGrowiUserContents = async (
+export const syncGrowiTopPostsByViews = async (
   db: Db,
   args: {
-    bearerToken: string;
+    publicApiKey: string;
     startDate: string;
     endDate: string;
+    limit: number;
     perPage: number;
+    includeGmv: boolean;
     maxPages?: number;
   },
-): Promise<Result<GrowiSyncSummary, DbQueryError>> => {
+): Promise<Result<GrowiPublicSyncSummary, DbQueryError>> => {
   return Result.gen(async function* () {
-    const config = yield* getGrowiApiConfig({
-      bearerToken: args.bearerToken,
+    const config = yield* getGrowiPublicApiConfig({
+      publicApiKey: args.publicApiKey,
     }).mapError(
       (error) =>
         new DbQueryError({
-          operation: 'build growi api config',
+          operation: 'build growi public api config',
           cause: error,
         }),
     );
@@ -81,11 +114,13 @@ export const syncGrowiUserContents = async (
         Result.tryPromise(
           {
             try: async () => {
-              const result = await fetchGrowiUserContentsPage(config, {
+              const result = await fetchGrowiTopPostsByViewsPage(config, {
                 startDate: args.startDate,
                 endDate: args.endDate,
                 page,
+                limit: args.limit,
                 perPage: args.perPage,
+                includeGmv: args.includeGmv,
               });
 
               if (result.isErr()) {
@@ -108,32 +143,40 @@ export const syncGrowiUserContents = async (
           result.mapError(
             (error) =>
               new DbQueryError({
-                operation: 'fetch growi user contents page',
+                operation: 'fetch growi public top_posts_by_views page',
                 cause: error,
               }),
           ),
         ),
       );
 
+      const rows = response.data.top_posts_by_views.map(toInternalPostRow);
+
       pagesFetched += 1;
-      rowsFetched += response.data.length;
+      rowsFetched += rows.length;
       rowCount = response.meta.row_count;
       pageCount = response.meta.page_count;
 
-      yield* Result.await(upsertGrowiPage(db, response.data));
+      yield* Result.await(upsertGrowiPage(db, rows));
 
-      if (!response.meta.next_page || response.data.length === 0) {
+      const noMorePagesByMeta =
+        response.meta.page_count === 0 || response.meta.current_page >= response.meta.page_count;
+      const noMorePagesByFlag = response.meta.has_more === false;
+
+      if (rows.length === 0 || noMorePagesByMeta || noMorePagesByFlag) {
         break;
       }
 
-      page = response.meta.next_page;
-      await sleep(300);
+      page += 1;
+      await sleep(2200);
     }
 
     return Result.ok({
       startDate: args.startDate,
       endDate: args.endDate,
+      limit: args.limit,
       perPage: args.perPage,
+      includeGmv: args.includeGmv,
       pagesFetched,
       rowsFetched,
       rowCount,
