@@ -20,8 +20,14 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Typecheck and config checks
-        run: bun run check
+      - name: Generate worker types
+        run: bun run typegen
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
 
       - name: Run tests
         run: bunx vitest run
