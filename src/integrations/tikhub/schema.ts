@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { UpstreamResponseError } from "../../shared/errors/app-error";
 import { Result } from "../../shared/result";
+import { normalizeOptionalTrimmedString } from "../../shared/schemas/string";
 
 const normalizeNumberValue = (value: unknown): number | undefined => {
   if (typeof value === "number") {
@@ -22,8 +23,8 @@ const normalizeNumberValue = (value: unknown): number | undefined => {
 
 const normalizeStringValue = (value: unknown): string | undefined => {
   if (typeof value === "string") {
-    const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : undefined;
+    const normalized = normalizeOptionalTrimmedString(value);
+    return typeof normalized === "string" ? normalized : undefined;
   }
 
   if (typeof value === "number") {

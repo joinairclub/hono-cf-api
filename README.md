@@ -59,7 +59,49 @@ curl -X POST http://127.0.0.1:8787/api/posts \
 curl http://127.0.0.1:8787/api/posts
 curl "http://127.0.0.1:8787/api/tiktok/download?share_url=https://www.tiktok.com/@travelwithjustjess/video/7551026080430181662"
 curl "http://127.0.0.1:8787/api/tiktok/info?share_url=https://www.tiktok.com/@travelwithjustjess/video/7551026080430181662"
+curl -X POST http://127.0.0.1:8787/api/transcribe \
+  -H "content-type: application/json" \
+  -d '{"audioUrl":"https://cdn.example.com/audio.mp3"}'
 ```
+
+## Transcription Endpoint
+
+`POST /api/transcribe`
+
+Request body:
+
+```json
+{
+  "audioUrl": "https://cdn.example.com/audio.mp3"
+}
+```
+
+Success response:
+
+```json
+{
+  "data": {
+    "text": "Full transcript text...",
+    "segments": [
+      {
+        "text": "word",
+        "start": 100,
+        "end": 350,
+        "confidence": 0.99
+      }
+    ],
+    "language": "en",
+    "duration": 62
+  },
+  "error": null
+}
+```
+
+Notes:
+
+- Accepts public audio file URLs (`mp3`, `wav`, `m4a`, `flac`, `ogg`, `webm`, etc.).
+- Uses Cloudflare Workers AI Whisper (`@cf/openai/whisper-large-v3-turbo`).
+- Worker fetches the audio URL, base64-encodes the payload, and sends it to Workers AI.
 
 ## Useful Scripts
 
@@ -73,7 +115,11 @@ curl "http://127.0.0.1:8787/api/tiktok/info?share_url=https://www.tiktok.com/@tr
 - `bun run db:migrate` - run local migrations
 - `bun run db:push` - push schema to local DB
 - `bun run db:studio` - open Drizzle Studio against local DB
+- `bun run test` - run project tests with Vitest (`src/**/*.test.ts`)
+- `bun run test:watch` - run tests in watch mode
 - `bun run check` - `typegen` + `typecheck`
+
+Use `bun run test` instead of `bun test` to avoid executing vendored tests under `opensrc/`.
 
 ## Deployment Model
 
