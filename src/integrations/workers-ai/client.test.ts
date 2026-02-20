@@ -15,7 +15,10 @@ describe("workers ai transcription client", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(new Uint8Array([1, 2, 3]), {
         status: 200,
-        headers: { "content-type": "audio/mpeg" },
+        headers: {
+          "content-type": "audio/mpeg",
+          "content-length": "3",
+        },
       }),
     );
 
@@ -111,10 +114,79 @@ describe("workers ai transcription client", () => {
     });
   });
 
+  it("returns UpstreamResponseError when content-length exceeds limit", async () => {
+    const run = vi.fn();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(new Uint8Array([1, 2, 3]), {
+        status: 200,
+        headers: {
+          "content-type": "audio/mpeg",
+          "content-length": String(30 * 1024 * 1024),
+        },
+      }),
+    );
+
+    const result = await transcribeWithWorkersAi({
+      audioUrl: "https://cdn.example.com/audio.mp3",
+      ai: { run } as unknown as Ai,
+    });
+
+    Result.match(result, {
+      ok: () => {
+        throw new Error("Expected UpstreamResponseError");
+      },
+      err: (error) => {
+        expect(UpstreamResponseError.is(error)).toBe(true);
+        if (UpstreamResponseError.is(error)) {
+          expect(error.service).toBe("WorkersAi");
+          expect(error.message).toContain("Audio source is too large");
+        }
+      },
+    });
+
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("returns UpstreamResponseError for invalid content-length", async () => {
+    const run = vi.fn();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(new Uint8Array([1, 2, 3]), {
+        status: 200,
+        headers: {
+          "content-type": "audio/mpeg",
+          "content-length": "invalid",
+        },
+      }),
+    );
+
+    const result = await transcribeWithWorkersAi({
+      audioUrl: "https://cdn.example.com/audio.mp3",
+      ai: { run } as unknown as Ai,
+    });
+
+    Result.match(result, {
+      ok: () => {
+        throw new Error("Expected UpstreamResponseError");
+      },
+      err: (error) => {
+        expect(UpstreamResponseError.is(error)).toBe(true);
+        if (UpstreamResponseError.is(error)) {
+          expect(error.service).toBe("WorkersAi");
+          expect(error.message).toContain("invalid content-length");
+        }
+      },
+    });
+
+    expect(run).not.toHaveBeenCalled();
+  });
+
   it("returns UpstreamRequestError when ai.run throws", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(new Uint8Array([1, 2, 3]), {
         status: 200,
+        headers: {
+          "content-length": "3",
+        },
       }),
     );
 
@@ -142,6 +214,9 @@ describe("workers ai transcription client", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(new Uint8Array([1, 2, 3]), {
         status: 200,
+        headers: {
+          "content-length": "3",
+        },
       }),
     );
 
@@ -169,6 +244,9 @@ describe("workers ai transcription client", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(new Uint8Array([1, 2, 3]), {
         status: 200,
+        headers: {
+          "content-length": "3",
+        },
       }),
     );
 

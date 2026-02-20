@@ -9,6 +9,7 @@ import type { WorkersAiTranscription } from "./schema";
 
 const WORKERS_AI_TRANSCRIBE_MODEL = "@cf/openai/whisper-large-v3-turbo";
 const WORKERS_AI_SERVICE = "WorkersAi";
+const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 
 export type WorkersAiClientError = UpstreamRequestError | UpstreamResponseError;
 
@@ -39,6 +40,17 @@ const encodeAudioBase64 = (
       }),
   });
 
+const parseContentLengthBytes = (
+  contentLengthHeader: string,
+): number | null => {
+  if (!/^\d+$/.test(contentLengthHeader)) {
+    return null;
+  }
+
+  const contentLength = Number.parseInt(contentLengthHeader, 10);
+  return Number.isSafeInteger(contentLength) ? contentLength : null;
+};
+
 export const transcribeWithWorkersAi = async (params: {
   audioUrl: string;
   ai: Ai;
@@ -60,6 +72,38 @@ export const transcribeWithWorkersAi = async (params: {
         new UpstreamResponseError({
           service: WORKERS_AI_SERVICE,
           message: `Audio source returned ${audioResponse.status}: ${responseText.slice(0, 300)}`,
+        }),
+      );
+    }
+
+    // Assumption: upstream audio sources provide a valid content-length header.
+    // We intentionally use header-based size enforcement (instead of stream byte counting)
+    // to keep this guard simple for the current TikTok CDN-backed flow.
+    const contentLengthHeader = audioResponse.headers.get("content-length");
+    if (contentLengthHeader === null) {
+      return Result.err(
+        new UpstreamResponseError({
+          service: WORKERS_AI_SERVICE,
+          message: "Audio source did not provide content-length header",
+        }),
+      );
+    }
+
+    const contentLength = parseContentLengthBytes(contentLengthHeader);
+    if (contentLength === null) {
+      return Result.err(
+        new UpstreamResponseError({
+          service: WORKERS_AI_SERVICE,
+          message: "Audio source returned invalid content-length header",
+        }),
+      );
+    }
+
+    if (contentLength > MAX_AUDIO_BYTES) {
+      return Result.err(
+        new UpstreamResponseError({
+          service: WORKERS_AI_SERVICE,
+          message: `Audio source is too large (${contentLength} bytes). Maximum supported size is ${MAX_AUDIO_BYTES} bytes`,
         }),
       );
     }
