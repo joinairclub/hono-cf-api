@@ -1,0 +1,1 @@
+ALTER TABLE "src_growi_post_metrics" DROP COLUMN "raw_json";
