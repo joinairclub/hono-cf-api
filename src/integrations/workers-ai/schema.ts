@@ -52,48 +52,53 @@ const workersAiNormalizedSegmentSchema = z
 
 export type WorkersAiSegment = z.infer<typeof workersAiNormalizedSegmentSchema>;
 
-const extractWordLevelSegments = (
-  segments: z.infer<typeof workersAiSegmentSchema>[],
-): WorkersAiSegment[] =>
-  segments.flatMap((segment) =>
-    (segment.words ?? []).flatMap((word) => {
-      if (
-        !word.word
-        || word.start === undefined
-        || word.end === undefined
-        || word.end < word.start
-      ) {
-        return [];
-      }
-
-      return [{
-        text: word.word,
-        start: word.start,
-        end: word.end,
-        confidence: null,
-      }];
-    }),
-  );
-
 const extractSegmentLevelFallback = (
-  segments: z.infer<typeof workersAiSegmentSchema>[],
+  segment: z.infer<typeof workersAiSegmentSchema>,
+): WorkersAiSegment[] => {
+  if (
+    !segment.text
+    || segment.start === undefined
+    || segment.end === undefined
+    || segment.end < segment.start
+  ) {
+    return [];
+  }
+
+  return [{
+    text: segment.text,
+    start: segment.start,
+    end: segment.end,
+    confidence: null,
+  }];
+};
+
+const extractWordLevelSegments = (
+  segment: z.infer<typeof workersAiSegmentSchema>,
 ): WorkersAiSegment[] =>
-  segments.flatMap((segment) => {
+  (segment.words ?? []).flatMap((word) => {
     if (
-      !segment.text
-      || segment.start === undefined
-      || segment.end === undefined
-      || segment.end < segment.start
+      !word.word
+      || word.start === undefined
+      || word.end === undefined
+      || word.end < word.start
     ) {
       return [];
     }
 
     return [{
-      text: segment.text,
-      start: segment.start,
-      end: segment.end,
+      text: word.word,
+      start: word.start,
+      end: word.end,
       confidence: null,
     }];
+  });
+
+const normalizeSegments = (
+  segments: z.infer<typeof workersAiSegmentSchema>[],
+): WorkersAiSegment[] =>
+  segments.flatMap((segment) => {
+    const wordLevelSegments = extractWordLevelSegments(segment);
+    return wordLevelSegments.length > 0 ? wordLevelSegments : extractSegmentLevelFallback(segment);
   });
 
 const workersAiNormalizedTranscriptionSchema = z.object({
@@ -106,12 +111,10 @@ const workersAiNormalizedTranscriptionSchema = z.object({
 const workersAiTranscriptionSchema = workersAiRawTranscriptionSchema
   .transform((data) => {
     const sourceSegments = data.segments ?? [];
-    const wordLevelSegments = extractWordLevelSegments(sourceSegments);
-    const fallbackSegments = extractSegmentLevelFallback(sourceSegments);
 
     return {
       text: data.text,
-      segments: wordLevelSegments.length > 0 ? wordLevelSegments : fallbackSegments,
+      segments: normalizeSegments(sourceSegments),
       language: data.transcription_info?.language ?? null,
       duration: data.transcription_info?.duration ?? null,
     };

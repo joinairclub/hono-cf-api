@@ -164,4 +164,63 @@ describe("workers ai transcription client", () => {
       },
     });
   });
+
+  it("preserves segment-level fallback when word timings are partial", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(new Uint8Array([1, 2, 3]), {
+        status: 200,
+      }),
+    );
+
+    const result = await transcribeWithWorkersAi({
+      audioUrl: "https://cdn.example.com/audio.mp3",
+      ai: {
+        run: vi.fn().mockResolvedValue({
+          text: "alpha beta",
+          transcription_info: {
+            language: "en",
+            duration: 2.2,
+          },
+          segments: [
+            {
+              words: [
+                {
+                  word: "alpha",
+                  start: 0,
+                  end: 0.8,
+                },
+              ],
+            },
+            {
+              text: "beta",
+              start: 1.1,
+              end: 2.2,
+            },
+          ],
+        }),
+      } as unknown as Ai,
+    });
+
+    Result.match(result, {
+      ok: (value) => {
+        expect(value.segments).toEqual([
+          {
+            text: "alpha",
+            start: 0,
+            end: 0.8,
+            confidence: null,
+          },
+          {
+            text: "beta",
+            start: 1.1,
+            end: 2.2,
+            confidence: null,
+          },
+        ]);
+      },
+      err: (error) => {
+        throw new Error(`Expected success, got ${error._tag}`);
+      },
+    });
+  });
 });
