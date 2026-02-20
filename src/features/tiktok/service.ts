@@ -39,6 +39,7 @@ export interface TikTokInfoResult {
       shareCount: number | null;
     };
     thumbnailUrl: string | null;
+    audioUrl: string | null;
     downloadUrl: string;
   };
 }
@@ -83,6 +84,7 @@ export const resolveTikTokInfo = (params: {
           author: videoInfo.author,
           stats: videoInfo.stats,
           thumbnailUrl: videoInfo.thumbnailUrl,
+          audioUrl: videoInfo.audioUrl,
           downloadUrl: videoInfo.downloadUrl,
         },
       } satisfies TikTokInfoResult)),

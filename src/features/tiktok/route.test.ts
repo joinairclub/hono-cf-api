@@ -56,6 +56,7 @@ const tiktokInfoResponseSchema = z.object({
         shareCount: z.number(),
       }),
       thumbnailUrl: z.string(),
+      audioUrl: z.string(),
       downloadUrl: z.string(),
     }),
   }),
@@ -168,6 +169,11 @@ describe("tiktok routes", () => {
                   },
                 ],
               },
+              music: {
+                play_url: {
+                  url_list: ["https://cdn.example/audio.mp3"],
+                },
+              },
             },
           },
         }),
@@ -207,6 +213,7 @@ describe("tiktok routes", () => {
       shareCount: 3,
     });
     expect(body.data.video.thumbnailUrl).toBe("https://cdn.example/thumb.jpg");
+    expect(body.data.video.audioUrl).toBe("https://cdn.example/audio.mp3");
     expect(body.data.video.downloadUrl).toBe("https://cdn.example/no-watermark.mp4");
   });
 
