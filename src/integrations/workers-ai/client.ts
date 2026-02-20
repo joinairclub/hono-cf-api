@@ -1,24 +1,26 @@
 import { Buffer } from "node:buffer";
-import { Result } from "../../shared/result";
 import {
-  WorkersAiRequestError,
-  WorkersAiResponseError,
-} from "./errors";
+  UpstreamRequestError,
+  UpstreamResponseError,
+} from "../../shared/errors/app-error";
+import { Result } from "../../shared/result";
 import { extractWorkersAiTranscription } from "./schema";
 import type { WorkersAiTranscription } from "./schema";
 
 const WORKERS_AI_TRANSCRIBE_MODEL = "@cf/openai/whisper-large-v3-turbo";
+const WORKERS_AI_SERVICE = "WorkersAi";
 
-export type WorkersAiClientError = WorkersAiRequestError | WorkersAiResponseError;
+export type WorkersAiClientError = UpstreamRequestError | UpstreamResponseError;
 
 const tryWorkersAiRequest = <T>(
   request: () => Promise<T>,
   message?: string,
-): Promise<Result<T, WorkersAiRequestError>> =>
+): Promise<Result<T, UpstreamRequestError>> =>
   Result.tryPromise({
     try: request,
     catch: (cause) =>
-      new WorkersAiRequestError({
+      new UpstreamRequestError({
+        service: WORKERS_AI_SERVICE,
         cause,
         message,
       }),
@@ -26,11 +28,12 @@ const tryWorkersAiRequest = <T>(
 
 const encodeAudioBase64 = (
   audioBuffer: ArrayBuffer,
-): Result<string, WorkersAiRequestError> =>
+): Result<string, UpstreamRequestError> =>
   Result.try({
     try: () => Buffer.from(audioBuffer).toString("base64"),
     catch: (cause) =>
-      new WorkersAiRequestError({
+      new UpstreamRequestError({
+        service: WORKERS_AI_SERVICE,
         cause,
         message: "Failed to encode audio payload for Workers AI",
       }),
@@ -54,7 +57,8 @@ export const transcribeWithWorkersAi = async (params: {
       );
 
       return Result.err(
-        new WorkersAiResponseError({
+        new UpstreamResponseError({
+          service: WORKERS_AI_SERVICE,
           message: `Audio source returned ${audioResponse.status}: ${responseText.slice(0, 300)}`,
         }),
       );

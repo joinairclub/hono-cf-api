@@ -3,13 +3,12 @@ import type {
   WorkersAiClientError,
 } from "../../integrations/workers-ai/client";
 import { ConfigurationError } from "../../shared/errors/app-error";
-import { Result, matchError } from "../../shared/result";
-import { TranscribeUpstreamError } from "./errors";
+import { Result } from "../../shared/result";
 import type { TranscribeAudioResponse } from "./schema";
 
 export type TranscribeServiceError =
   | ConfigurationError
-  | TranscribeUpstreamError;
+  | WorkersAiClientError;
 
 const getWorkersAiBinding = (
   env: Env,
@@ -41,29 +40,10 @@ export const transcribeAudioUrl = async (params: {
 }): Promise<Result<TranscribeAudioResponse, TranscribeServiceError>> =>
   Result.gen(async function* () {
     const ai = yield* getWorkersAiBinding(params.env);
-    const transcriptionResult = await transcribeWithWorkersAi({
+    const transcription = yield* Result.await(transcribeWithWorkersAi({
       audioUrl: params.audioUrl,
       ai,
-    });
-
-    const transcription = yield* transcriptionResult.mapError(
-      (error: WorkersAiClientError): TranscribeUpstreamError =>
-        matchError(error, {
-          WorkersAiRequestError: (e) =>
-            new TranscribeUpstreamError({
-              provider: "workers-ai",
-              kind: "request",
-              message: e.message,
-              cause: e.cause,
-            }),
-          WorkersAiResponseError: (e) =>
-            new TranscribeUpstreamError({
-              provider: "workers-ai",
-              kind: "response",
-              message: e.message,
-            }),
-        }),
-    );
+    }));
 
     return Result.ok({
       text: transcription.text,

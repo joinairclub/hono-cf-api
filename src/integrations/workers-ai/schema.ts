@@ -1,7 +1,7 @@
 import { z } from "zod";
+import { UpstreamResponseError } from "../../shared/errors/app-error";
 import { Result } from "../../shared/result";
 import { optionalTrimmedStringSchema, trimmedStringSchema } from "../../shared/schemas/string";
-import { WorkersAiResponseError } from "./errors";
 
 const timeSecondSchema = z
   .number()
@@ -122,12 +122,13 @@ export type WorkersAiTranscription = z.infer<typeof workersAiNormalizedTranscrip
 
 export const extractWorkersAiTranscription = (
   payload: unknown,
-): Result<WorkersAiTranscription, WorkersAiResponseError> => {
+): Result<WorkersAiTranscription, UpstreamResponseError> => {
   const parsed = workersAiTranscriptionSchema.safeParse(payload);
 
   if (!parsed.success) {
     return Result.err(
-      new WorkersAiResponseError({
+      new UpstreamResponseError({
+        service: "WorkersAi",
         message: "Workers AI transcription schema mismatch",
       }),
     );

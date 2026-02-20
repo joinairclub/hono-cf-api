@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  UpstreamRequestError,
+  UpstreamResponseError,
+} from "../../shared/errors/app-error";
 import { Result } from "../../shared/result";
 import { transcribeWithWorkersAi } from "./client";
-import { WorkersAiRequestError, WorkersAiResponseError } from "./errors";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -81,7 +84,7 @@ describe("workers ai transcription client", () => {
     expect(typeof payload.audio).toBe("string");
   });
 
-  it("returns WorkersAiResponseError when audio source request is not ok", async () => {
+  it("returns UpstreamResponseError when audio source request is not ok", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response("forbidden", {
         status: 403,
@@ -96,18 +99,19 @@ describe("workers ai transcription client", () => {
 
     Result.match(result, {
       ok: () => {
-        throw new Error("Expected WorkersAiResponseError");
+        throw new Error("Expected UpstreamResponseError");
       },
       err: (error) => {
-        expect(WorkersAiResponseError.is(error)).toBe(true);
-        if (WorkersAiResponseError.is(error)) {
+        expect(UpstreamResponseError.is(error)).toBe(true);
+        if (UpstreamResponseError.is(error)) {
+          expect(error.service).toBe("WorkersAi");
           expect(error.message).toContain("Audio source returned 403");
         }
       },
     });
   });
 
-  it("returns WorkersAiRequestError when ai.run throws", async () => {
+  it("returns UpstreamRequestError when ai.run throws", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(new Uint8Array([1, 2, 3]), {
         status: 200,
@@ -123,15 +127,18 @@ describe("workers ai transcription client", () => {
 
     Result.match(result, {
       ok: () => {
-        throw new Error("Expected WorkersAiRequestError");
+        throw new Error("Expected UpstreamRequestError");
       },
       err: (error) => {
-        expect(WorkersAiRequestError.is(error)).toBe(true);
+        expect(UpstreamRequestError.is(error)).toBe(true);
+        if (UpstreamRequestError.is(error)) {
+          expect(error.service).toBe("WorkersAi");
+        }
       },
     });
   });
 
-  it("returns WorkersAiResponseError for schema mismatch", async () => {
+  it("returns UpstreamResponseError for schema mismatch", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(new Uint8Array([1, 2, 3]), {
         status: 200,
@@ -147,10 +154,13 @@ describe("workers ai transcription client", () => {
 
     Result.match(result, {
       ok: () => {
-        throw new Error("Expected WorkersAiResponseError");
+        throw new Error("Expected UpstreamResponseError");
       },
       err: (error) => {
-        expect(WorkersAiResponseError.is(error)).toBe(true);
+        expect(UpstreamResponseError.is(error)).toBe(true);
+        if (UpstreamResponseError.is(error)) {
+          expect(error.service).toBe("WorkersAi");
+        }
       },
     });
   });

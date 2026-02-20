@@ -1,9 +1,11 @@
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { ConfigurationError } from "../../shared/errors/app-error";
+import {
+  ConfigurationError,
+  UpstreamRequestError,
+} from "../../shared/errors/app-error";
 import { Result } from "../../shared/result";
-import { TranscribeUpstreamError } from "./errors";
 
 const mocks = vi.hoisted(() => ({
   transcribeAudioUrl: vi.fn(),
@@ -16,17 +18,20 @@ vi.mock("./service", () => ({
 import { transcribeRoutes } from "./route";
 
 const transcribeResponseSchema = z.object({
-  text: z.string(),
-  segments: z.array(
-    z.object({
-      text: z.string(),
-      start: z.number(),
-      end: z.number(),
-      confidence: z.number().nullable(),
-    }),
-  ),
-  language: z.string().nullable(),
-  duration: z.number().nullable(),
+  data: z.object({
+    text: z.string(),
+    segments: z.array(
+      z.object({
+        text: z.string(),
+        start: z.number(),
+        end: z.number(),
+        confidence: z.number().nullable(),
+      }),
+    ),
+    language: z.string().nullable(),
+    duration: z.number().nullable(),
+  }),
+  error: z.null(),
 });
 
 const mockEnv = {
@@ -94,9 +99,10 @@ describe("transcribe routes", () => {
     const body = transcribeResponseSchema.parse(await response.json());
 
     expect(response.status).toBe(200);
-    expect(body.text).toBe("hello world");
-    expect(body.segments[0]?.confidence).toBe(0.99);
-    expect(body.duration).toBe(62);
+    expect(body.error).toBeNull();
+    expect(body.data.text).toBe("hello world");
+    expect(body.data.segments[0]?.confidence).toBe(0.99);
+    expect(body.data.duration).toBe(62);
     expect(mocks.transcribeAudioUrl).toHaveBeenCalledWith({
       env: mockEnv,
       audioUrl: "https://cdn.example.com/audio.mp3",
@@ -183,9 +189,8 @@ describe("transcribe routes", () => {
     const app = createTestApp();
     mocks.transcribeAudioUrl.mockResolvedValue(
       Result.err(
-        new TranscribeUpstreamError({
-          provider: "workers-ai",
-          kind: "request",
+        new UpstreamRequestError({
+          service: "WorkersAi",
           message: "Workers AI request failed: network",
           cause: new Error("network"),
         }),
@@ -209,8 +214,8 @@ describe("transcribe routes", () => {
     expect(await response.json()).toEqual({
       data: null,
       error: {
-        message: "Upstream transcription failed",
-        code: "TranscribeUpstreamError",
+        message: "Upstream request failed",
+        code: "UpstreamRequestError",
       },
     });
   });

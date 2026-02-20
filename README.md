@@ -80,17 +80,20 @@ Success response:
 
 ```json
 {
-  "text": "Full transcript text...",
-  "segments": [
-    {
-      "text": "word",
-      "start": 100,
-      "end": 350,
-      "confidence": 0.99
-    }
-  ],
-  "language": "en",
-  "duration": 62
+  "data": {
+    "text": "Full transcript text...",
+    "segments": [
+      {
+        "text": "word",
+        "start": 100,
+        "end": 350,
+        "confidence": 0.99
+      }
+    ],
+    "language": "en",
+    "duration": 62
+  },
+  "error": null
 }
 ```
 

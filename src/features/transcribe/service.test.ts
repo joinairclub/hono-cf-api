@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { WorkersAiRequestError } from "../../integrations/workers-ai/errors";
-import { ConfigurationError } from "../../shared/errors/app-error";
+import {
+  ConfigurationError,
+  UpstreamRequestError,
+} from "../../shared/errors/app-error";
 import { Result } from "../../shared/result";
-import { TranscribeUpstreamError } from "./errors";
 
 const mocks = vi.hoisted(() => ({
   transcribeWithWorkersAi: vi.fn(),
@@ -88,10 +89,11 @@ describe("transcribe service", () => {
     });
   });
 
-  it("normalizes integration errors to TranscribeUpstreamError", async () => {
+  it("propagates integration upstream errors", async () => {
     mocks.transcribeWithWorkersAi.mockResolvedValue(
       Result.err(
-        new WorkersAiRequestError({
+        new UpstreamRequestError({
+          service: "WorkersAi",
           cause: new Error("network"),
         }),
       ),
@@ -104,13 +106,12 @@ describe("transcribe service", () => {
 
     Result.match(result, {
       ok: () => {
-        throw new Error("Expected TranscribeUpstreamError");
+        throw new Error("Expected UpstreamRequestError");
       },
       err: (error) => {
-        expect(TranscribeUpstreamError.is(error)).toBe(true);
-        if (TranscribeUpstreamError.is(error)) {
-          expect(error.provider).toBe("workers-ai");
-          expect(error.kind).toBe("request");
+        expect(UpstreamRequestError.is(error)).toBe(true);
+        if (UpstreamRequestError.is(error)) {
+          expect(error.service).toBe("WorkersAi");
         }
       },
     });
