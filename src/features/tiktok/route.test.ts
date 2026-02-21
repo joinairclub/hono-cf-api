@@ -1,6 +1,9 @@
 import { Hono } from "hono";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { z } from "zod";
+import {
+  apiErrorResponseSchema,
+  apiSuccessResponseSchema,
+} from "../../shared/schemas/api-response";
 import { tiktokProfileResultSchema } from "./profile/schema";
 import { tiktokRoutes } from "./route";
 import { tiktokInfoResultSchema } from "./video/schema";
@@ -24,23 +27,8 @@ const mockExecutionCtx = {
   props: {},
 };
 
-const tiktokInfoResponseSchema = z.object({
-  data: tiktokInfoResultSchema,
-  error: z.null(),
-});
-
-const tiktokProfileResponseSchema = z.object({
-  data: tiktokProfileResultSchema,
-  error: z.null(),
-});
-
-const apiErrorResponseSchema = z.object({
-  data: z.null(),
-  error: z.object({
-    message: z.string(),
-    code: z.string(),
-  }),
-});
+const tiktokInfoResponseSchema = apiSuccessResponseSchema(tiktokInfoResultSchema);
+const tiktokProfileResponseSchema = apiSuccessResponseSchema(tiktokProfileResultSchema);
 
 afterEach(() => {
   vi.restoreAllMocks();
