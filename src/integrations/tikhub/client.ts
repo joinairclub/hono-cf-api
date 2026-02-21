@@ -3,14 +3,10 @@ import {
   UpstreamResponseError,
 } from "../../shared/errors/app-error";
 import { Result } from "../../shared/result";
-import {
-  extractTikHubProfileInfo,
-  extractTikHubVideoInfo,
-} from "./schema";
-import type {
-  TikHubProfileInfo,
-  TikHubVideoInfo,
-} from "./schema";
+import { extractTikHubProfileInfo } from "./profile/schema";
+import type { TikHubProfileInfo } from "./profile/schema";
+import { extractTikHubVideoInfo } from "./video/schema";
+import type { TikHubVideoInfo } from "./video/schema";
 
 const TIKHUB_VIDEO_INFO_ENDPOINT =
   "https://api.tikhub.io/api/v1/tiktok/app/v3/fetch_one_video_by_share_url";

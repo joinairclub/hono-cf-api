@@ -221,6 +221,74 @@ describe("tiktok routes", () => {
     });
   });
 
+  it("handles empty optional profile fields from tikhub", async () => {
+    const app = createTestApp();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            userInfo: {
+              user: {
+                id: "107955",
+                uniqueId: "tiktok",
+                secUid: "",
+                nickname: "TikTok",
+                verified: "",
+                signature: "",
+                createTime: "",
+                avatarThumb: "",
+                avatarMedium: "",
+                avatarLarger: "",
+                bioLink: {
+                  link: "",
+                },
+                commerceUserInfo: {
+                  category: "",
+                },
+              },
+              stats: {
+                followerCount: "",
+                followingCount: "",
+                heartCount: "",
+                videoCount: "",
+                friendCount: "",
+              },
+            },
+          },
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      ),
+    );
+
+    const response = await app.request(
+      "/api/tiktok/profile?username=@tiktok",
+      undefined,
+      mockEnv,
+      mockExecutionCtx,
+    );
+    const body = tiktokProfileResponseSchema.parse(await response.json());
+
+    expect(response.status).toBe(200);
+    expect(body.error).toBeNull();
+    expect(body.data.username).toBe("tiktok");
+    expect(body.data.profile.secUserId).toBeNull();
+    expect(body.data.profile.verified).toBeNull();
+    expect(body.data.profile.bio).toBeNull();
+    expect(body.data.profile.bioLink).toBeNull();
+    expect(body.data.profile.category).toBeNull();
+    expect(body.data.profile.createdTime).toBeNull();
+    expect(body.data.profile.stats).toEqual({
+      followerCount: null,
+      followingCount: null,
+      likeCount: null,
+      videoCount: null,
+      friendCount: null,
+    });
+  });
+
   it("returns 400 for non-tiktok share url", async () => {
     const app = createTestApp();
     const response = await app.request(
