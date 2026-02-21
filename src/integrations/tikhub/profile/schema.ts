@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { unixTimestampToIso } from "../../../shared/date";
 import { UpstreamResponseError } from "../../../shared/errors/app-error";
 import { Result } from "../../../shared/result";
 import { normalizeNumberValue } from "../../../shared/schemas/number";
@@ -77,16 +78,6 @@ const tikhubProfileInfoSchema = z.object({
 
 export type TikHubProfileInfo = z.infer<typeof tikhubProfileInfoSchema>;
 
-const unixToIso = (value: number | undefined): string | null => {
-  if (value === undefined) {
-    return null;
-  }
-
-  const milliseconds = value >= 1_000_000_000_000 ? value : value * 1_000;
-  const date = new Date(milliseconds);
-  return Number.isNaN(date.getTime()) ? null : date.toISOString();
-};
-
 export const extractTikHubProfileInfo = (
   payload: unknown,
 ): Result<TikHubProfileInfo, UpstreamResponseError> => {
@@ -124,7 +115,7 @@ export const extractTikHubProfileInfo = (
     bioLink: user.bioLink?.link ?? null,
     category: user.commerceUserInfo?.category ?? null,
     createdTime: user.createTime ?? null,
-    createdAt: unixToIso(user.createTime),
+    createdAt: unixTimestampToIso(user.createTime),
     stats: {
       followerCount,
       followingCount,

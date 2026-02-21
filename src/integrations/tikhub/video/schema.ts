@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { unixTimestampToIso } from "../../../shared/date";
 import { UpstreamResponseError } from "../../../shared/errors/app-error";
 import { Result } from "../../../shared/result";
 import { normalizeNumberValue } from "../../../shared/schemas/number";
@@ -131,16 +132,6 @@ const normalizeDurationMs = (value: number | undefined): number | null => {
   return value >= 1_000 ? Math.round(value) : Math.round(value * 1_000);
 };
 
-const unixToIso = (value: number | undefined): string | null => {
-  if (value === undefined) {
-    return null;
-  }
-
-  const milliseconds = value >= 1_000_000_000_000 ? value : value * 1_000;
-  const date = new Date(milliseconds);
-  return Number.isNaN(date.getTime()) ? null : date.toISOString();
-};
-
 export const extractTikHubVideoInfo = (
   payload: unknown,
 ): Result<TikHubVideoInfo, UpstreamResponseError> => {
@@ -204,7 +195,7 @@ export const extractTikHubVideoInfo = (
     awemeId,
     description,
     durationMs,
-    createdAt: unixToIso(firstDetail?.create_time),
+    createdAt: unixTimestampToIso(firstDetail?.create_time),
     hashtags,
     author: {
       userId: firstDetail?.author?.uid ?? null,
