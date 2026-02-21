@@ -116,7 +116,8 @@ Notes:
 - `bun run db:studio` - open Drizzle Studio against local DB
 - `bun run test` - run project tests with Vitest (`src/**/*.test.ts`)
 - `bun run test:watch` - run tests in watch mode
-- `bun run check` - `typegen` + `typecheck`
+- `bun run verify` - canonical quality gate (`typecheck` + `lint` + `test`)
+- `bun run check` - full gate (`typegen` + `verify`)
 
 Use `bun run test` instead of `bun test` to avoid executing vendored tests under `opensrc/`.
 
