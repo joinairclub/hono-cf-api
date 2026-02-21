@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { UpstreamResponseError } from "../../shared/errors/app-error";
 import { Result } from "../../shared/result";
-import { normalizeOptionalTrimmedString } from "../../shared/schemas/string";
+import { normalizeOptionalBoolean, normalizeOptionalTrimmedString } from "../../shared/schemas/string";
 
 const normalizeNumberValue = (value: unknown): number | undefined => {
   if (typeof value === "number") {
@@ -36,6 +36,7 @@ const normalizeStringValue = (value: unknown): string | undefined => {
 
 const numericFieldSchema = z.preprocess(normalizeNumberValue, z.number());
 const stringFieldSchema = z.preprocess(normalizeStringValue, z.string().min(1));
+const booleanFieldSchema = z.preprocess(normalizeOptionalBoolean, z.boolean());
 
 const tikhubAddressSchema = z.looseObject({
   uri: z.string().optional(),
@@ -95,6 +96,44 @@ const tikhubResponseSchema = z.looseObject({
   }),
 });
 
+const tikhubProfileUserSchema = z.looseObject({
+  id: stringFieldSchema.optional(),
+  uniqueId: stringFieldSchema.optional(),
+  secUid: stringFieldSchema.optional(),
+  nickname: stringFieldSchema.optional(),
+  verified: booleanFieldSchema.optional(),
+  signature: stringFieldSchema.optional(),
+  createTime: numericFieldSchema.optional(),
+  avatarThumb: stringFieldSchema.optional(),
+  avatarMedium: stringFieldSchema.optional(),
+  avatarLarger: stringFieldSchema.optional(),
+  bioLink: z.looseObject({
+    link: stringFieldSchema.optional(),
+  }).optional(),
+  commerceUserInfo: z.looseObject({
+    category: stringFieldSchema.optional(),
+  }).optional(),
+});
+
+const tikhubProfileStatsSchema = z.looseObject({
+  followerCount: numericFieldSchema.optional(),
+  followingCount: numericFieldSchema.optional(),
+  heart: numericFieldSchema.optional(),
+  heartCount: numericFieldSchema.optional(),
+  videoCount: numericFieldSchema.optional(),
+  friendCount: numericFieldSchema.optional(),
+});
+
+const tikhubProfileResponseSchema = z.looseObject({
+  data: z.looseObject({
+    userInfo: z.looseObject({
+      user: tikhubProfileUserSchema,
+      stats: tikhubProfileStatsSchema.optional(),
+      statsV2: tikhubProfileStatsSchema.optional(),
+    }),
+  }),
+});
+
 export interface TikHubDownloadInfo {
   awemeId: string;
   downloadUrl: string;
@@ -120,6 +159,29 @@ export interface TikHubVideoInfo {
   thumbnailUrl: string | null;
   audioUrl: string | null;
   downloadUrl: string;
+}
+
+export interface TikHubProfileInfo {
+  userId: string | null;
+  username: string | null;
+  secUserId: string | null;
+  nickname: string | null;
+  verified: boolean | null;
+  avatarThumbUrl: string | null;
+  avatarMediumUrl: string | null;
+  avatarLargeUrl: string | null;
+  bio: string | null;
+  bioLink: string | null;
+  category: string | null;
+  createdTime: number | null;
+  createdAt: string | null;
+  stats: {
+    followerCount: number | null;
+    followingCount: number | null;
+    likeCount: number | null;
+    videoCount: number | null;
+    friendCount: number | null;
+  };
 }
 
 const getFirstUrl = (
@@ -250,3 +312,51 @@ export const extractTikHubDownloadInfo = (
     awemeId: info.awemeId,
     downloadUrl: info.downloadUrl,
   }));
+
+export const extractTikHubProfileInfo = (
+  payload: unknown,
+): Result<TikHubProfileInfo, UpstreamResponseError> => {
+  const parsed = tikhubProfileResponseSchema.safeParse(payload);
+  if (!parsed.success) {
+    return Result.err(
+      new UpstreamResponseError({
+        service: "TikHub",
+        message: "TikHub profile response schema mismatch",
+      }),
+    );
+  }
+
+  const userInfo = parsed.data.data.userInfo;
+  const user = userInfo.user;
+  const stats = userInfo.stats;
+  const statsV2 = userInfo.statsV2;
+  const followerCount = statsV2?.followerCount ?? stats?.followerCount ?? null;
+  // Prefer `stats.followingCount` first because the live API currently sends it as a number there.
+  const followingCount = stats?.followingCount ?? statsV2?.followingCount ?? null;
+  const likeCount = statsV2?.heartCount ?? statsV2?.heart ?? stats?.heartCount ?? stats?.heart ?? null;
+  const videoCount = statsV2?.videoCount ?? stats?.videoCount ?? null;
+  const friendCount = statsV2?.friendCount ?? stats?.friendCount ?? null;
+
+  return Result.ok({
+    userId: user.id ?? null,
+    username: user.uniqueId ?? null,
+    secUserId: user.secUid ?? null,
+    nickname: user.nickname ?? null,
+    verified: user.verified ?? null,
+    avatarThumbUrl: user.avatarThumb ?? null,
+    avatarMediumUrl: user.avatarMedium ?? null,
+    avatarLargeUrl: user.avatarLarger ?? null,
+    bio: user.signature ?? null,
+    bioLink: user.bioLink?.link ?? null,
+    category: user.commerceUserInfo?.category ?? null,
+    createdTime: user.createTime ?? null,
+    createdAt: unixToIso(user.createTime),
+    stats: {
+      followerCount,
+      followingCount,
+      likeCount,
+      videoCount,
+      friendCount,
+    },
+  });
+};
