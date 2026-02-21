@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { tiktokProfileRoutes } from "./profile/route";
-import { tiktokVideoRoutes } from "./video/route";
+import { tiktokProfileRoutes } from "@/features/tiktok/profile/route";
+import { tiktokVideoRoutes } from "@/features/tiktok/video/route";
 
 export const tiktokRoutes = new Hono<{ Bindings: Env }>();
 

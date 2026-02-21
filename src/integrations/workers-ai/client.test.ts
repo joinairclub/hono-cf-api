@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { transcribeWithWorkersAi } from "@/integrations/workers-ai/client";
 import {
   UpstreamRequestError,
   UpstreamResponseError,
-} from "../../shared/errors/app-error";
-import { Result } from "../../shared/result";
-import { transcribeWithWorkersAi } from "./client";
+} from "@/shared/errors/app-error";
+import { Result } from "@/shared/result";
 
 afterEach(() => {
   vi.restoreAllMocks();

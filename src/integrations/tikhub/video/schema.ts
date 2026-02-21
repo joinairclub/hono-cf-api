@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { unixTimestampToIso } from "../../../shared/date";
-import { UpstreamResponseError } from "../../../shared/errors/app-error";
-import { Result } from "../../../shared/result";
-import { normalizeNumberValue } from "../../../shared/schemas/number";
-import { normalizeStringValue } from "../../../shared/schemas/string";
+import { unixTimestampToIso } from "@/shared/date";
+import { UpstreamResponseError } from "@/shared/errors/app-error";
+import { Result } from "@/shared/result";
+import { normalizeNumberValue } from "@/shared/schemas/number";
+import { normalizeStringValue } from "@/shared/schemas/string";
 
 const optionalNumericFieldSchema = z.preprocess(normalizeNumberValue, z.number().optional());
 const optionalStringFieldSchema = z.preprocess(

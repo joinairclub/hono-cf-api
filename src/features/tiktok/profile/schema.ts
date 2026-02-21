@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { trimmedStringSchema } from "../../../shared/schemas/string";
+import { trimmedStringSchema } from "@/shared/schemas/string";
 
 const tiktokUsernameSchema = trimmedStringSchema
   .transform((value) => value.replace(/^@/, ""))

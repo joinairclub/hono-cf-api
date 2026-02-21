@@ -1,9 +1,9 @@
 import { Hono } from "hono";
-import { postsRoutes } from "../features/posts/route";
-import { tiktokRoutes } from "../features/tiktok/route";
-import { transcribeRoutes } from "../features/transcribe/route";
-import { InternalError, NotFoundError, toApiError } from "../shared/errors/app-error";
-import { isPanic } from "../shared/result";
+import { postsRoutes } from "@/features/posts/route";
+import { tiktokRoutes } from "@/features/tiktok/route";
+import { transcribeRoutes } from "@/features/transcribe/route";
+import { InternalError, NotFoundError, toApiError } from "@/shared/errors/app-error";
+import { isPanic } from "@/shared/result";
 
 export const createApp = () => {
   const app = new Hono<{ Bindings: Env }>();

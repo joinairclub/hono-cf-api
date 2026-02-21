@@ -1,7 +1,7 @@
-import { DbConnectionError } from "../shared/errors/app-error";
-import { Result } from "../shared/result";
-import { createDbClient } from "./client";
-import type { Db } from "./client";
+import { createDbClient } from "@/db/client";
+import type { Db } from "@/db/client";
+import { DbConnectionError } from "@/shared/errors/app-error";
+import { Result } from "@/shared/result";
 
 export const connectDb = (
   connectionString: string,

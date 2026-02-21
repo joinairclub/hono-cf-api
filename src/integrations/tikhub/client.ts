@@ -1,12 +1,12 @@
+import { extractTikHubProfileInfo } from "@/integrations/tikhub/profile/schema";
+import type { TikHubProfileInfo } from "@/integrations/tikhub/profile/schema";
+import { extractTikHubVideoInfo } from "@/integrations/tikhub/video/schema";
+import type { TikHubVideoInfo } from "@/integrations/tikhub/video/schema";
 import {
   UpstreamRequestError,
   UpstreamResponseError,
-} from "../../shared/errors/app-error";
-import { Result } from "../../shared/result";
-import { extractTikHubProfileInfo } from "./profile/schema";
-import type { TikHubProfileInfo } from "./profile/schema";
-import { extractTikHubVideoInfo } from "./video/schema";
-import type { TikHubVideoInfo } from "./video/schema";
+} from "@/shared/errors/app-error";
+import { Result } from "@/shared/result";
 
 const TIKHUB_VIDEO_INFO_ENDPOINT =
   "https://api.tikhub.io/api/v1/tiktok/app/v3/fetch_one_video_by_share_url";

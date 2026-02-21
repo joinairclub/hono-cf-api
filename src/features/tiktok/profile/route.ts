@@ -1,8 +1,8 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import { respond } from "../../../app/respond";
-import { tiktokProfileQuerySchema } from "./schema";
-import { resolveTikTokProfile } from "./service";
+import { respond } from "@/app/respond";
+import { tiktokProfileQuerySchema } from "@/features/tiktok/profile/schema";
+import { resolveTikTokProfile } from "@/features/tiktok/profile/service";
 
 export const tiktokProfileRoutes = new Hono<{ Bindings: Env }>();
 

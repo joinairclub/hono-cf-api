@@ -1,25 +1,24 @@
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { transcribeRoutes } from "@/features/transcribe/route";
+import { transcribeAudioResponseSchema } from "@/features/transcribe/schema";
 import {
   ConfigurationError,
   UpstreamRequestError,
-} from "../../shared/errors/app-error";
-import { Result } from "../../shared/result";
+} from "@/shared/errors/app-error";
+import { Result } from "@/shared/result";
 import {
   apiErrorResponseSchema,
   apiSuccessResponseSchema,
-} from "../../shared/schemas/api-response";
+} from "@/shared/schemas/api-response";
 
 const mocks = vi.hoisted(() => ({
   transcribeAudioUrl: vi.fn(),
 }));
 
-vi.mock("./service", () => ({
+vi.mock("@/features/transcribe/service", () => ({
   transcribeAudioUrl: mocks.transcribeAudioUrl,
 }));
-
-import { transcribeRoutes } from "./route";
-import { transcribeAudioResponseSchema } from "./schema";
 
 const transcribeResponseSchema = apiSuccessResponseSchema(transcribeAudioResponseSchema);
 

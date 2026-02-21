@@ -1,19 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { transcribeAudioUrl } from "@/features/transcribe/service";
 import {
   ConfigurationError,
   UpstreamRequestError,
-} from "../../shared/errors/app-error";
-import { Result } from "../../shared/result";
+} from "@/shared/errors/app-error";
+import { Result } from "@/shared/result";
 
 const mocks = vi.hoisted(() => ({
   transcribeWithWorkersAi: vi.fn(),
 }));
 
-vi.mock("../../integrations/workers-ai/client", () => ({
+vi.mock("@/integrations/workers-ai/client", () => ({
   transcribeWithWorkersAi: mocks.transcribeWithWorkersAi,
 }));
-
-import { transcribeAudioUrl } from "./service";
 
 const baseEnv = {
   AI: {
