@@ -15,10 +15,7 @@ export const resolveTikTokProfile = (params: {
     .andThenAsync((token) => fetchTikHubProfileInfo(params.username, token))
     .then((result) =>
       result.map((profileInfo) => ({
-        provider: "tiktok" as const,
-        source: "tikhub" as const,
         username: params.username,
-        status: "resolved" as const,
         profile: {
           userId: profileInfo.userId,
           username: profileInfo.username,

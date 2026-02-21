@@ -4,13 +4,18 @@ import {
 } from "../../shared/errors/app-error";
 import { Result } from "../../shared/result";
 import {
-  extractTikHubDownloadInfo,
+  extractTikHubProfileInfo,
   extractTikHubVideoInfo,
 } from "./schema";
-import type { TikHubDownloadInfo, TikHubVideoInfo } from "./schema";
+import type {
+  TikHubProfileInfo,
+  TikHubVideoInfo,
+} from "./schema";
 
-const TIKHUB_DOWNLOAD_ENDPOINT =
+const TIKHUB_VIDEO_INFO_ENDPOINT =
   "https://api.tikhub.io/api/v1/tiktok/app/v3/fetch_one_video_by_share_url";
+const TIKHUB_PROFILE_ENDPOINT =
+  "https://api.tikhub.io/api/v1/tiktok/web/fetch_user_profile";
 
 export type TikHubClientError = UpstreamRequestError | UpstreamResponseError;
 
@@ -26,27 +31,32 @@ const tryTikHubRequest = <T>(
       }),
   });
 
-const fetchTikHubPayload = async (
-  shareUrl: string,
-  token: string,
-): Promise<Result<unknown, TikHubClientError>> =>
+const fetchTikHubJson = async (params: {
+  endpoint: string;
+  query: Record<string, string>;
+  token: string;
+}): Promise<Result<unknown, TikHubClientError>> =>
   Result.gen(async function* () {
-    const endpoint = new URL(TIKHUB_DOWNLOAD_ENDPOINT);
-    endpoint.searchParams.set("share_url", shareUrl);
+    const endpoint = new URL(params.endpoint);
+    for (const [key, value] of Object.entries(params.query)) {
+      endpoint.searchParams.set(key, value);
+    }
 
     const response = yield* Result.await(
       tryTikHubRequest(() =>
         fetch(endpoint, {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${params.token}`,
           },
         }),
       ),
     );
 
     if (!response.ok) {
-      const responseText = yield* Result.await(tryTikHubRequest(() => response.text()));
+      const responseText = yield* Result.await(
+        tryTikHubRequest(() => response.text()),
+      );
 
       return Result.err(
         new UpstreamResponseError({
@@ -63,18 +73,22 @@ const fetchTikHubPayload = async (
     return Result.ok(payload);
   });
 
-export const fetchTikHubDownloadInfo = (
-  shareUrl: string,
-  token: string,
-): Promise<Result<TikHubDownloadInfo, TikHubClientError>> =>
-  fetchTikHubPayload(shareUrl, token).then((result) =>
-    result.andThen(extractTikHubDownloadInfo),
-  );
-
 export const fetchTikHubVideoInfo = (
   shareUrl: string,
   token: string,
 ): Promise<Result<TikHubVideoInfo, TikHubClientError>> =>
-  fetchTikHubPayload(shareUrl, token).then((result) =>
-    result.andThen(extractTikHubVideoInfo),
-  );
+  fetchTikHubJson({
+    endpoint: TIKHUB_VIDEO_INFO_ENDPOINT,
+    query: { share_url: shareUrl },
+    token,
+  }).then((result) => result.andThen(extractTikHubVideoInfo));
+
+export const fetchTikHubProfileInfo = (
+  username: string,
+  token: string,
+): Promise<Result<TikHubProfileInfo, TikHubClientError>> =>
+  fetchTikHubJson({
+    endpoint: TIKHUB_PROFILE_ENDPOINT,
+    query: { uniqueId: username },
+    token,
+  }).then((result) => result.andThen(extractTikHubProfileInfo));

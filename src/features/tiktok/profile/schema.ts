@@ -24,10 +24,7 @@ export const tiktokProfileStatsSchema = z.object({
 });
 
 export const tiktokProfileResultSchema = z.object({
-  provider: z.literal("tiktok"),
-  source: z.literal("tikhub"),
   username: z.string(),
-  status: z.literal("resolved"),
   profile: z.object({
     userId: z.string().nullable(),
     username: z.string().nullable(),

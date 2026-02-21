@@ -134,11 +134,6 @@ const tikhubProfileResponseSchema = z.looseObject({
   }),
 });
 
-export interface TikHubDownloadInfo {
-  awemeId: string;
-  downloadUrl: string;
-}
-
 export interface TikHubVideoInfo {
   awemeId: string;
   description: string | null;
@@ -304,14 +299,6 @@ export const extractTikHubVideoInfo = (
     downloadUrl,
   });
 };
-
-export const extractTikHubDownloadInfo = (
-  payload: unknown,
-): Result<TikHubDownloadInfo, UpstreamResponseError> =>
-  extractTikHubVideoInfo(payload).map((info) => ({
-    awemeId: info.awemeId,
-    downloadUrl: info.downloadUrl,
-  }));
 
 export const extractTikHubProfileInfo = (
   payload: unknown,
