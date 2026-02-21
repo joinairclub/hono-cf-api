@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "lint:fix": "bun run lint --fix",
+    "lint:staged": "lint-staged",
     "verify": "bun run typecheck && bun run lint && bun run test",
     "check": "bun run typegen && bun run verify",
     "test": "vitest run",
@@ -23,7 +24,13 @@
     "db:migrate": "DOTENV_CONFIG_PATH=.env.local drizzle-kit migrate",
     "db:migrate:ci": "drizzle-kit migrate",
     "db:push": "DOTENV_CONFIG_PATH=.env.local drizzle-kit push",
-    "db:studio": "DOTENV_CONFIG_PATH=.env.local drizzle-kit studio"
+    "db:studio": "DOTENV_CONFIG_PATH=.env.local drizzle-kit studio",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "src/**/*.ts": [
+      "eslint --fix --max-warnings=0"
+    ]
   },
   "dependencies": {
     "@hono/zod-validator": "^0.7.6",
@@ -40,6 +47,8 @@
     "@types/pg": "^8.16.0",
     "drizzle-kit": "^0.31.9",
     "eslint": "^9",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
     "wrangler": "^4.67.0"
