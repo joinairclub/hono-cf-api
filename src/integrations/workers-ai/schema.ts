@@ -108,6 +108,8 @@ const workersAiNormalizedTranscriptionSchema = z.object({
   duration: timeSecondSchema.nullable(),
 }).strip();
 
+export const workersAiTranscriptionResponseSchema = workersAiNormalizedTranscriptionSchema;
+
 const workersAiTranscriptionSchema = workersAiRawTranscriptionSchema
   .transform((data) => {
     const sourceSegments = data.segments ?? [];

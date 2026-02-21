@@ -1,11 +1,16 @@
 import { Hono } from "hono";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { z } from "zod";
-import { tiktokDownloadRoutes } from "./route";
+import {
+  apiErrorResponseSchema,
+  apiSuccessResponseSchema,
+} from "../../shared/schemas/api-response";
+import { tiktokProfileResultSchema } from "./profile/schema";
+import { tiktokRoutes } from "./route";
+import { tiktokInfoResultSchema } from "./video/schema";
 
 const createTestApp = () => {
   const app = new Hono<{ Bindings: Env }>();
-  app.route("/api/tiktok", tiktokDownloadRoutes);
+  app.route("/api/tiktok", tiktokRoutes);
   return app;
 };
 
@@ -22,95 +27,14 @@ const mockExecutionCtx = {
   props: {},
 };
 
-const tiktokDownloadResponseSchema = z.object({
-  data: z.object({
-    provider: z.string(),
-    source: z.string(),
-    shareUrl: z.string(),
-    videoId: z.string(),
-    downloadUrl: z.string(),
-    status: z.string(),
-  }),
-  error: z.null(),
-});
-
-const tiktokInfoResponseSchema = z.object({
-  data: z.object({
-    provider: z.string(),
-    status: z.string(),
-    video: z.object({
-      id: z.string(),
-      description: z.string(),
-      durationMs: z.number(),
-      createdAt: z.string(),
-      hashtags: z.array(z.string()),
-      author: z.object({
-        userId: z.string(),
-        username: z.string(),
-        nickname: z.string(),
-      }),
-      stats: z.object({
-        playCount: z.number(),
-        likeCount: z.number(),
-        commentCount: z.number(),
-        shareCount: z.number(),
-      }),
-      thumbnailUrl: z.string(),
-      audioUrl: z.string(),
-      downloadUrl: z.string(),
-    }),
-  }),
-  error: z.null(),
-});
+const tiktokInfoResponseSchema = apiSuccessResponseSchema(tiktokInfoResultSchema);
+const tiktokProfileResponseSchema = apiSuccessResponseSchema(tiktokProfileResultSchema);
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
 describe("tiktok routes", () => {
-  it("returns resolved download payload from tikhub", async () => {
-    const app = createTestApp();
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          data: {
-            aweme_details: [
-              {
-                aweme_id: "7551026080430181662",
-                video: {
-                  download_no_watermark_addr: {
-                    url_list: ["https://cdn.example/video.mp4"],
-                  },
-                },
-              },
-            ],
-          },
-        }),
-        {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        },
-      ),
-    );
-
-    const response = await app.request(
-      "/api/tiktok/download?share_url=https://www.tiktok.com/@travelwithjustjess/video/7551026080430181662",
-      undefined,
-      mockEnv,
-      mockExecutionCtx,
-    );
-    const body = tiktokDownloadResponseSchema.parse(await response.json());
-
-    expect(response.status).toBe(200);
-    expect(body.error).toBeNull();
-    expect(body.data.provider).toBe("tiktok");
-    expect(body.data.source).toBe("tikhub");
-    expect(body.data.downloadUrl).toBe("https://cdn.example/video.mp4");
-    expect(body.data.status).toBe("resolved");
-    expect(body.data.videoId).toBe("7551026080430181662");
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-  });
-
   it("returns tiktok metadata payload from tikhub", async () => {
     const app = createTestApp();
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
@@ -194,8 +118,6 @@ describe("tiktok routes", () => {
 
     expect(response.status).toBe(200);
     expect(body.error).toBeNull();
-    expect(body.data.provider).toBe("tiktok");
-    expect(body.data.status).toBe("resolved");
     expect(body.data.video.id).toBe("7551026080430181662");
     expect(body.data.video.description).toBe("Charlotte to NYC #travelhacks #familyvacation");
     expect(body.data.video.durationMs).toBe(26267);
@@ -217,10 +139,160 @@ describe("tiktok routes", () => {
     expect(body.data.video.downloadUrl).toBe("https://cdn.example/no-watermark.mp4");
   });
 
+  it("returns tiktok profile payload from tikhub", async () => {
+    const app = createTestApp();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            userInfo: {
+              user: {
+                id: "107955",
+                uniqueId: "tiktok",
+                secUid: "MS4wLjABAAAAv7iSuuXDJGDvJkmH_vz1qkDZYo1apxgzaxdBSeIuPiM",
+                nickname: "TikTok",
+                verified: true,
+                signature: "One TikTok can make a big impact",
+                createTime: 1425144149,
+                avatarThumb: "https://cdn.example/thumb.jpg",
+                avatarMedium: "https://cdn.example/medium.jpg",
+                avatarLarger: "https://cdn.example/large.jpg",
+                bioLink: {
+                  link: "linktr.ee/tiktok",
+                },
+                commerceUserInfo: {
+                  category: "Media & Entertainment",
+                },
+              },
+              stats: {
+                followerCount: 93000000,
+                followingCount: 5,
+                heartCount: 454400000,
+                videoCount: 1391,
+                friendCount: 3,
+              },
+              statsV2: {
+                followerCount: "93010642",
+                followingCount: "5",
+                heartCount: "454446280",
+                videoCount: "1391",
+                friendCount: "3",
+              },
+            },
+          },
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      ),
+    );
+
+    const response = await app.request(
+      "/api/tiktok/profile?username=@tiktok",
+      undefined,
+      mockEnv,
+      mockExecutionCtx,
+    );
+    const body = tiktokProfileResponseSchema.parse(await response.json());
+
+    expect(response.status).toBe(200);
+    expect(body.error).toBeNull();
+    expect(body.data.username).toBe("tiktok");
+    expect(body.data.profile.userId).toBe("107955");
+    expect(body.data.profile.username).toBe("tiktok");
+    expect(body.data.profile.secUserId).toBe(
+      "MS4wLjABAAAAv7iSuuXDJGDvJkmH_vz1qkDZYo1apxgzaxdBSeIuPiM",
+    );
+    expect(body.data.profile.nickname).toBe("TikTok");
+    expect(body.data.profile.verified).toBe(true);
+    expect(body.data.profile.avatarThumbUrl).toBe("https://cdn.example/thumb.jpg");
+    expect(body.data.profile.bio).toBe("One TikTok can make a big impact");
+    expect(body.data.profile.bioLink).toBe("linktr.ee/tiktok");
+    expect(body.data.profile.category).toBe("Media & Entertainment");
+    expect(body.data.profile.createdTime).toBe(1425144149);
+    expect(body.data.profile.createdAt).toBe("2015-02-28T17:22:29.000Z");
+    expect(body.data.profile.stats).toEqual({
+      followerCount: 93010642,
+      followingCount: 5,
+      likeCount: 454446280,
+      videoCount: 1391,
+      friendCount: 3,
+    });
+  });
+
+  it("handles empty optional profile fields from tikhub", async () => {
+    const app = createTestApp();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            userInfo: {
+              user: {
+                id: "107955",
+                uniqueId: "tiktok",
+                secUid: "",
+                nickname: "TikTok",
+                verified: "",
+                signature: "",
+                createTime: "",
+                avatarThumb: "",
+                avatarMedium: "",
+                avatarLarger: "",
+                bioLink: {
+                  link: "",
+                },
+                commerceUserInfo: {
+                  category: "",
+                },
+              },
+              stats: {
+                followerCount: "",
+                followingCount: "",
+                heartCount: "",
+                videoCount: "",
+                friendCount: "",
+              },
+            },
+          },
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      ),
+    );
+
+    const response = await app.request(
+      "/api/tiktok/profile?username=@tiktok",
+      undefined,
+      mockEnv,
+      mockExecutionCtx,
+    );
+    const body = tiktokProfileResponseSchema.parse(await response.json());
+
+    expect(response.status).toBe(200);
+    expect(body.error).toBeNull();
+    expect(body.data.username).toBe("tiktok");
+    expect(body.data.profile.secUserId).toBeNull();
+    expect(body.data.profile.verified).toBeNull();
+    expect(body.data.profile.bio).toBeNull();
+    expect(body.data.profile.bioLink).toBeNull();
+    expect(body.data.profile.category).toBeNull();
+    expect(body.data.profile.createdTime).toBeNull();
+    expect(body.data.profile.stats).toEqual({
+      followerCount: null,
+      followingCount: null,
+      likeCount: null,
+      videoCount: null,
+      friendCount: null,
+    });
+  });
+
   it("returns 400 for non-tiktok share url", async () => {
     const app = createTestApp();
     const response = await app.request(
-      "/api/tiktok/download?share_url=https://example.com/video/123",
+      "/api/tiktok/info?share_url=https://example.com/video/123",
     );
 
     expect(response.status).toBe(400);
@@ -235,19 +307,174 @@ describe("tiktok routes", () => {
     } as unknown as Env;
 
     const response = await app.request(
-      "/api/tiktok/download?share_url=https://www.tiktok.com/@travelwithjustjess/video/7551026080430181662",
+      "/api/tiktok/info?share_url=https://www.tiktok.com/@travelwithjustjess/video/7551026080430181662",
       undefined,
       envWithoutToken,
       mockExecutionCtx,
     );
 
     expect(response.status).toBe(500);
-    expect(await response.json()).toEqual({
-      data: null,
-      error: {
-        message: "Server configuration error",
-        code: "ConfigurationError",
+    const body = apiErrorResponseSchema.parse(await response.json());
+    expect(body.error.message).toBe("Server configuration error");
+    expect(body.error.code).toBe("ConfigurationError");
+  });
+
+  it("returns 500 when tikhub token is missing for profile", async () => {
+    const app = createTestApp();
+    const envWithoutToken = {
+      HYPERDRIVE: {
+        connectionString: "postgresql://example",
       },
-    });
+    } as unknown as Env;
+
+    const response = await app.request(
+      "/api/tiktok/profile?username=tiktok",
+      undefined,
+      envWithoutToken,
+      mockExecutionCtx,
+    );
+
+    expect(response.status).toBe(500);
+    const body = apiErrorResponseSchema.parse(await response.json());
+    expect(body.error.message).toBe("Server configuration error");
+    expect(body.error.code).toBe("ConfigurationError");
+  });
+
+  it("returns 400 for empty username", async () => {
+    const app = createTestApp();
+    const response = await app.request("/api/tiktok/profile?username=");
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 400 for whitespace-only username", async () => {
+    const app = createTestApp();
+    const response = await app.request("/api/tiktok/profile?username=%20%20");
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 400 for username exceeding 64 characters", async () => {
+    const app = createTestApp();
+    const longUsername = "a".repeat(65);
+    const response = await app.request(`/api/tiktok/profile?username=${longUsername}`);
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 400 for username with invalid characters", async () => {
+    const app = createTestApp();
+    const response = await app.request("/api/tiktok/profile?username=user%20name!");
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 502 when tikhub returns non-200 for video", async () => {
+    const app = createTestApp();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("Rate limited", { status: 429 }),
+    );
+
+    const response = await app.request(
+      "/api/tiktok/info?share_url=https://www.tiktok.com/@user/video/123",
+      undefined,
+      mockEnv,
+      mockExecutionCtx,
+    );
+
+    expect(response.status).toBe(502);
+    const body = apiErrorResponseSchema.parse(await response.json());
+    expect(body.error.code).toBe("UpstreamResponseError");
+  });
+
+  it("returns 502 when tikhub returns malformed json", async () => {
+    const app = createTestApp();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("not json {{{", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const response = await app.request(
+      "/api/tiktok/info?share_url=https://www.tiktok.com/@user/video/123",
+      undefined,
+      mockEnv,
+      mockExecutionCtx,
+    );
+
+    expect(response.status).toBe(502);
+    const body = apiErrorResponseSchema.parse(await response.json());
+    expect(body.error.code).toBe("UpstreamRequestError");
+  });
+
+  it("returns 502 when tikhub response has no download url", async () => {
+    const app = createTestApp();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            aweme_detail: {
+              aweme_id: "123",
+              desc: "test",
+              video: {},
+            },
+          },
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      ),
+    );
+
+    const response = await app.request(
+      "/api/tiktok/info?share_url=https://www.tiktok.com/@user/video/123",
+      undefined,
+      mockEnv,
+      mockExecutionCtx,
+    );
+
+    expect(response.status).toBe(502);
+    const body = apiErrorResponseSchema.parse(await response.json());
+    expect(body.error.code).toBe("UpstreamResponseError");
+  });
+
+  it("returns 502 when tikhub returns non-200 for profile", async () => {
+    const app = createTestApp();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("Internal Server Error", { status: 500 }),
+    );
+
+    const response = await app.request(
+      "/api/tiktok/profile?username=tiktok",
+      undefined,
+      mockEnv,
+      mockExecutionCtx,
+    );
+
+    expect(response.status).toBe(502);
+    const body = apiErrorResponseSchema.parse(await response.json());
+    expect(body.error.code).toBe("UpstreamResponseError");
+  });
+
+  it("returns 502 when tikhub profile response has no userInfo", async () => {
+    const app = createTestApp();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({ data: {} }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      ),
+    );
+
+    const response = await app.request(
+      "/api/tiktok/profile?username=tiktok",
+      undefined,
+      mockEnv,
+      mockExecutionCtx,
+    );
+
+    expect(response.status).toBe(502);
+    const body = apiErrorResponseSchema.parse(await response.json());
+    expect(body.error.code).toBe("UpstreamResponseError");
   });
 });

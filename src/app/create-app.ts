@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { postsRoutes } from "../features/posts/route";
-import { tiktokDownloadRoutes } from "../features/tiktok/route";
+import { tiktokRoutes } from "../features/tiktok/route";
 import { transcribeRoutes } from "../features/transcribe/route";
 import { InternalError, NotFoundError, toApiError } from "../shared/errors/app-error";
 import { isPanic } from "../shared/result";
@@ -12,7 +12,7 @@ export const createApp = () => {
   app.get("/health", (c) => c.json({ ok: true }));
 
   app.route("/api/posts", postsRoutes);
-  app.route("/api/tiktok", tiktokDownloadRoutes);
+  app.route("/api/tiktok", tiktokRoutes);
   app.route("/api/transcribe", transcribeRoutes);
 
   app.notFound((c) => {

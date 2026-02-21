@@ -1,41 +1,15 @@
 import { z } from "zod";
-import { UpstreamResponseError } from "../../shared/errors/app-error";
-import { Result } from "../../shared/result";
-import { normalizeOptionalTrimmedString } from "../../shared/schemas/string";
+import { unixTimestampToIso } from "../../../shared/date";
+import { UpstreamResponseError } from "../../../shared/errors/app-error";
+import { Result } from "../../../shared/result";
+import { normalizeNumberValue } from "../../../shared/schemas/number";
+import { normalizeStringValue } from "../../../shared/schemas/string";
 
-const normalizeNumberValue = (value: unknown): number | undefined => {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : undefined;
-  }
-
-  if (typeof value !== "string") {
-    return undefined;
-  }
-
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return undefined;
-  }
-
-  const parsed = Number(trimmed);
-  return Number.isFinite(parsed) ? parsed : undefined;
-};
-
-const normalizeStringValue = (value: unknown): string | undefined => {
-  if (typeof value === "string") {
-    const normalized = normalizeOptionalTrimmedString(value);
-    return typeof normalized === "string" ? normalized : undefined;
-  }
-
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? String(value) : undefined;
-  }
-
-  return undefined;
-};
-
-const numericFieldSchema = z.preprocess(normalizeNumberValue, z.number());
-const stringFieldSchema = z.preprocess(normalizeStringValue, z.string().min(1));
+const optionalNumericFieldSchema = z.preprocess(normalizeNumberValue, z.number().optional());
+const optionalStringFieldSchema = z.preprocess(
+  normalizeStringValue,
+  z.string().min(1).optional(),
+);
 
 const tikhubAddressSchema = z.looseObject({
   uri: z.string().optional(),
@@ -43,7 +17,7 @@ const tikhubAddressSchema = z.looseObject({
 });
 
 const tikhubVideoSchema = z.looseObject({
-  duration: numericFieldSchema.optional(),
+  duration: optionalNumericFieldSchema,
   download_no_watermark_addr: tikhubAddressSchema.optional(),
   download_addr: tikhubAddressSchema.optional(),
   play_addr: tikhubAddressSchema.optional(),
@@ -57,28 +31,28 @@ const tikhubMusicSchema = z.looseObject({
 });
 
 const tikhubHashtagSchema = z.looseObject({
-  cha_name: stringFieldSchema.optional(),
+  cha_name: optionalStringFieldSchema,
 });
 
 const tikhubAuthorSchema = z.looseObject({
-  uid: stringFieldSchema.optional(),
-  unique_id: stringFieldSchema.optional(),
-  nickname: stringFieldSchema.optional(),
+  uid: optionalStringFieldSchema,
+  unique_id: optionalStringFieldSchema,
+  nickname: optionalStringFieldSchema,
 });
 
 const tikhubStatisticsSchema = z.looseObject({
-  play_count: numericFieldSchema.optional(),
-  digg_count: numericFieldSchema.optional(),
-  comment_count: numericFieldSchema.optional(),
-  share_count: numericFieldSchema.optional(),
+  play_count: optionalNumericFieldSchema,
+  digg_count: optionalNumericFieldSchema,
+  comment_count: optionalNumericFieldSchema,
+  share_count: optionalNumericFieldSchema,
 });
 
 const tikhubDetailSchema = z.looseObject({
-  aweme_id: stringFieldSchema.optional(),
-  aweme_id_str: stringFieldSchema.optional(),
-  desc: stringFieldSchema.optional(),
-  create_time: numericFieldSchema.optional(),
-  duration: numericFieldSchema.optional(),
+  aweme_id: optionalStringFieldSchema,
+  aweme_id_str: optionalStringFieldSchema,
+  desc: optionalStringFieldSchema,
+  create_time: optionalNumericFieldSchema,
+  duration: optionalNumericFieldSchema,
   cha_list: z.array(tikhubHashtagSchema).optional(),
   author: tikhubAuthorSchema.optional(),
   statistics: tikhubStatisticsSchema.optional(),
@@ -95,32 +69,29 @@ const tikhubResponseSchema = z.looseObject({
   }),
 });
 
-export interface TikHubDownloadInfo {
-  awemeId: string;
-  downloadUrl: string;
-}
+const tikhubVideoInfoSchema = z.object({
+  awemeId: z.string(),
+  description: z.string().nullable(),
+  durationMs: z.number().nullable(),
+  createdAt: z.string().nullable(),
+  hashtags: z.array(z.string()),
+  author: z.object({
+    userId: z.string().nullable(),
+    username: z.string().nullable(),
+    nickname: z.string().nullable(),
+  }),
+  stats: z.object({
+    playCount: z.number().nullable(),
+    likeCount: z.number().nullable(),
+    commentCount: z.number().nullable(),
+    shareCount: z.number().nullable(),
+  }),
+  thumbnailUrl: z.string().nullable(),
+  audioUrl: z.string().nullable(),
+  downloadUrl: z.string(),
+});
 
-export interface TikHubVideoInfo {
-  awemeId: string;
-  description: string | null;
-  durationMs: number | null;
-  createdAt: string | null;
-  hashtags: string[];
-  author: {
-    userId: string | null;
-    username: string | null;
-    nickname: string | null;
-  };
-  stats: {
-    playCount: number | null;
-    likeCount: number | null;
-    commentCount: number | null;
-    shareCount: number | null;
-  };
-  thumbnailUrl: string | null;
-  audioUrl: string | null;
-  downloadUrl: string;
-}
+export type TikHubVideoInfo = z.infer<typeof tikhubVideoInfoSchema>;
 
 const getFirstUrl = (
   address: z.infer<typeof tikhubAddressSchema> | undefined,
@@ -142,28 +113,23 @@ const extractHashtagsFromDescription = (description: string | null): string[] =>
   }
 
   return (
-    description.match(/#[A-Za-z0-9_]+/g)?.map((tag) => tag.slice(1)).filter(Boolean) ?? []
+    description.match(/#[\p{L}\p{N}_]+/gu)?.map((tag) => tag.slice(1)).filter(Boolean) ?? []
   );
 };
 
 const normalizeHashtag = (tag: string): string => tag.replace(/^#/, "").trim().toLowerCase();
 
+/**
+ * TikHub returns duration in milliseconds (>= 1000) or seconds (< 1000).
+ * All known TikTok videos are at least one second long, so values under
+ * 1000 are assumed to be in seconds and converted to milliseconds.
+ */
 const normalizeDurationMs = (value: number | undefined): number | null => {
   if (value === undefined) {
     return null;
   }
 
   return value >= 1_000 ? Math.round(value) : Math.round(value * 1_000);
-};
-
-const unixToIso = (value: number | undefined): string | null => {
-  if (value === undefined) {
-    return null;
-  }
-
-  const milliseconds = value >= 1_000_000_000_000 ? value : value * 1_000;
-  const date = new Date(milliseconds);
-  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 };
 
 export const extractTikHubVideoInfo = (
@@ -195,7 +161,15 @@ export const extractTikHubVideoInfo = (
     );
   }
 
-  const awemeId = firstDetail?.aweme_id ?? firstDetail?.aweme_id_str ?? crypto.randomUUID();
+  const awemeId = firstDetail?.aweme_id ?? firstDetail?.aweme_id_str;
+  if (!awemeId) {
+    return Result.err(
+      new UpstreamResponseError({
+        service: "TikHub",
+        message: "TikHub response does not contain a video ID",
+      }),
+    );
+  }
 
   const hashtagsFromTopics =
     firstDetail?.cha_list
@@ -217,11 +191,11 @@ export const extractTikHubVideoInfo = (
     getFirstUrl(firstDetail?.music?.play_url) ??
     getFirstUrl(firstDetail?.added_sound_music_info?.play_url);
 
-  return Result.ok({
+  const normalizedVideoInfo = {
     awemeId,
     description,
     durationMs,
-    createdAt: unixToIso(firstDetail?.create_time),
+    createdAt: unixTimestampToIso(firstDetail?.create_time),
     hashtags,
     author: {
       userId: firstDetail?.author?.uid ?? null,
@@ -240,13 +214,17 @@ export const extractTikHubVideoInfo = (
       getFirstUrl(video?.dynamic_cover),
     audioUrl,
     downloadUrl,
-  });
-};
+  } satisfies TikHubVideoInfo;
 
-export const extractTikHubDownloadInfo = (
-  payload: unknown,
-): Result<TikHubDownloadInfo, UpstreamResponseError> =>
-  extractTikHubVideoInfo(payload).map((info) => ({
-    awemeId: info.awemeId,
-    downloadUrl: info.downloadUrl,
-  }));
+  const normalized = tikhubVideoInfoSchema.safeParse(normalizedVideoInfo);
+  if (!normalized.success) {
+    return Result.err(
+      new UpstreamResponseError({
+        service: "TikHub",
+        message: "TikHub video normalization mismatch",
+      }),
+    );
+  }
+
+  return Result.ok(normalized.data);
+};

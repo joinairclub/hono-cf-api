@@ -57,7 +57,6 @@ curl -X POST http://127.0.0.1:8787/api/posts \
   -H "content-type: application/json" \
   -d '{"title":"Hello","body":"World","published":true}'
 curl http://127.0.0.1:8787/api/posts
-curl "http://127.0.0.1:8787/api/tiktok/download?share_url=https://www.tiktok.com/@travelwithjustjess/video/7551026080430181662"
 curl "http://127.0.0.1:8787/api/tiktok/info?share_url=https://www.tiktok.com/@travelwithjustjess/video/7551026080430181662"
 curl -X POST http://127.0.0.1:8787/api/transcribe \
   -H "content-type: application/json" \

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { apiErrorResponseSchema } from "../shared/schemas/api-response";
 import { createApp } from "./create-app";
 
 describe("create app routes", () => {
@@ -23,9 +24,8 @@ describe("create app routes", () => {
     const response = await app.request("/does-not-exist");
 
     expect(response.status).toBe(404);
-    expect(await response.json()).toEqual({
-      data: null,
-      error: { message: "Not Found", code: "NotFoundError" },
-    });
+    const body = apiErrorResponseSchema.parse(await response.json());
+    expect(body.error.message).toBe("Not Found");
+    expect(body.error.code).toBe("NotFoundError");
   });
 });

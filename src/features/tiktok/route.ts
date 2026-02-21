@@ -1,23 +1,8 @@
-import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import { respond } from "../../app/respond";
-import { tiktokShareUrlQuerySchema } from "./schema";
-import { resolveTikTokDownload, resolveTikTokInfo } from "./service";
+import { tiktokProfileRoutes } from "./profile/route";
+import { tiktokVideoRoutes } from "./video/route";
 
-export const tiktokDownloadRoutes = new Hono<{ Bindings: Env }>();
+export const tiktokRoutes = new Hono<{ Bindings: Env }>();
 
-tiktokDownloadRoutes.get(
-  "/download",
-  zValidator("query", tiktokShareUrlQuerySchema),
-  async (c) => {
-    const { share_url: shareUrl } = c.req.valid("query");
-    const result = await resolveTikTokDownload({ env: c.env, shareUrl });
-    return respond(c, result);
-  },
-);
-
-tiktokDownloadRoutes.get("/info", zValidator("query", tiktokShareUrlQuerySchema), async (c) => {
-  const { share_url: shareUrl } = c.req.valid("query");
-  const result = await resolveTikTokInfo({ env: c.env, shareUrl });
-  return respond(c, result);
-});
+tiktokRoutes.route("/", tiktokVideoRoutes);
+tiktokRoutes.route("/", tiktokProfileRoutes);
