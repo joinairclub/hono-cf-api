@@ -120,6 +120,24 @@ Notes:
 
 Use `bun run test` instead of `bun test` to avoid executing vendored tests under `opensrc/`.
 
+## Git Hooks
+
+Hooks are managed with Husky and installed automatically by `bun install` (`prepare` script).
+
+- `pre-commit` runs `lint-staged` and applies `eslint --fix` to staged `src/**/*.ts` files.
+- `pre-push` runs `bun run typecheck` and `bun run test`.
+
+If hooks are missing locally, run:
+
+```bash
+bun run prepare
+```
+
+Bypass policy:
+
+- `git commit --no-verify` or `git push --no-verify` is only for emergencies.
+- If bypass is used, run `bun run typecheck`, `bun run lint`, and `bun run test` before opening or merging a PR.
+
 ## Imports
 
 - Use `@/...` absolute imports for internal modules under `src/`.
