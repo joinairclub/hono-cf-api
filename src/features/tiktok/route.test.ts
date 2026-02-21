@@ -246,13 +246,9 @@ describe("tiktok routes", () => {
     );
 
     expect(response.status).toBe(500);
-    expect(await response.json()).toEqual({
-      data: null,
-      error: {
-        message: "Server configuration error",
-        code: "ConfigurationError",
-      },
-    });
+    const body = apiErrorResponseSchema.parse(await response.json());
+    expect(body.error.message).toBe("Server configuration error");
+    expect(body.error.code).toBe("ConfigurationError");
   });
 
   it("returns 500 when tikhub token is missing for profile", async () => {
@@ -271,13 +267,9 @@ describe("tiktok routes", () => {
     );
 
     expect(response.status).toBe(500);
-    expect(await response.json()).toEqual({
-      data: null,
-      error: {
-        message: "Server configuration error",
-        code: "ConfigurationError",
-      },
-    });
+    const body = apiErrorResponseSchema.parse(await response.json());
+    expect(body.error.message).toBe("Server configuration error");
+    expect(body.error.code).toBe("ConfigurationError");
   });
 
   it("returns 400 for empty username", async () => {

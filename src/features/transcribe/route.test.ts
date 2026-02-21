@@ -1,11 +1,14 @@
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { z } from "zod";
 import {
   ConfigurationError,
   UpstreamRequestError,
 } from "../../shared/errors/app-error";
 import { Result } from "../../shared/result";
+import {
+  apiErrorResponseSchema,
+  apiSuccessResponseSchema,
+} from "../../shared/schemas/api-response";
 
 const mocks = vi.hoisted(() => ({
   transcribeAudioUrl: vi.fn(),
@@ -16,23 +19,9 @@ vi.mock("./service", () => ({
 }));
 
 import { transcribeRoutes } from "./route";
+import { transcribeAudioResponseSchema } from "./schema";
 
-const transcribeResponseSchema = z.object({
-  data: z.object({
-    text: z.string(),
-    segments: z.array(
-      z.object({
-        text: z.string(),
-        start: z.number(),
-        end: z.number(),
-        confidence: z.number().nullable(),
-      }),
-    ),
-    language: z.string().nullable(),
-    duration: z.number().nullable(),
-  }),
-  error: z.null(),
-});
+const transcribeResponseSchema = apiSuccessResponseSchema(transcribeAudioResponseSchema);
 
 const mockEnv = {
   AI: {
@@ -176,13 +165,9 @@ describe("transcribe routes", () => {
     );
 
     expect(response.status).toBe(500);
-    expect(await response.json()).toEqual({
-      data: null,
-      error: {
-        message: "Server configuration error",
-        code: "ConfigurationError",
-      },
-    });
+    const body = apiErrorResponseSchema.parse(await response.json());
+    expect(body.error.message).toBe("Server configuration error");
+    expect(body.error.code).toBe("ConfigurationError");
   });
 
   it("maps upstream transcription errors to 502 envelope", async () => {
@@ -211,13 +196,9 @@ describe("transcribe routes", () => {
     );
 
     expect(response.status).toBe(502);
-    expect(await response.json()).toEqual({
-      data: null,
-      error: {
-        message: "Upstream request failed",
-        code: "UpstreamRequestError",
-      },
-    });
+    const body = apiErrorResponseSchema.parse(await response.json());
+    expect(body.error.message).toBe("Upstream request failed");
+    expect(body.error.code).toBe("UpstreamRequestError");
   });
 
 });

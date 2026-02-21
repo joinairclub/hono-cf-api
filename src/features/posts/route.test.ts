@@ -1,9 +1,17 @@
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { z } from "zod";
 import type { Db } from "../../db/client";
 import { DbQueryError } from "../../shared/errors/app-error";
 import { Result } from "../../shared/result";
+import {
+  apiErrorResponseSchema,
+  apiSuccessResponseSchema,
+} from "../../shared/schemas/api-response";
+import { postsRoutes } from "./route";
+import {
+  listPostsResponseDataSchema,
+  postResponseSchema,
+} from "./schema";
 
 const mockDb = {} as Db;
 const mockClient = {
@@ -26,8 +34,6 @@ vi.mock("./repository", () => ({
   createPost: mocks.createPost,
 }));
 
-import { postsRoutes } from "./route";
-
 const mockEnv = {
   HYPERDRIVE: {
     connectionString: "postgresql://example",
@@ -46,15 +52,8 @@ const postPayload = {
   published: true,
 };
 
-const listPostsResponseSchema = z.object({
-  data: z.array(z.object({ title: z.string() })),
-  error: z.null(),
-});
-
-const createPostResponseSchema = z.object({
-  data: z.object({ title: z.string() }),
-  error: z.null(),
-});
+const listPostsResponseSchema = apiSuccessResponseSchema(listPostsResponseDataSchema);
+const createPostResponseSchema = apiSuccessResponseSchema(postResponseSchema);
 
 const createTestApp = () => {
   const app = new Hono<{ Bindings: Env }>();
@@ -108,10 +107,9 @@ describe("posts routes", () => {
     const response = await app.request("/api/posts", undefined, mockEnv, mockExecutionCtx);
 
     expect(response.status).toBe(500);
-    expect(await response.json()).toEqual({
-      data: null,
-      error: { message: "Database connection failed", code: "DbConnectionError" },
-    });
+    const body = apiErrorResponseSchema.parse(await response.json());
+    expect(body.error.message).toBe("Database connection failed");
+    expect(body.error.code).toBe("DbConnectionError");
   });
 
   it("creates a post", async () => {
@@ -160,10 +158,9 @@ describe("posts routes", () => {
     );
 
     expect(response.status).toBe(500);
-    expect(await response.json()).toEqual({
-      data: null,
-      error: { message: "Database query failed", code: "DbQueryError" },
-    });
+    const body = apiErrorResponseSchema.parse(await response.json());
+    expect(body.error.message).toBe("Database query failed");
+    expect(body.error.code).toBe("DbQueryError");
   });
 
   it("returns 400 for invalid post payload", async () => {

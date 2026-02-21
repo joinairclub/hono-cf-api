@@ -23,4 +23,15 @@ export const createPostSchema = z
   })
   .strip();
 
+export const postResponseSchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  body: z.string(),
+  published: z.boolean(),
+  createdAt: z.string(),
+});
+
+export const listPostsResponseDataSchema = z.array(postResponseSchema);
+
 export type CreatePostInput = z.infer<typeof createPostSchema>;
+export type PostResponse = z.infer<typeof postResponseSchema>;

@@ -11,4 +11,20 @@ export default [
       },
     },
   },
+  {
+    files: ["src/features/**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "zod",
+              message: "Import feature/shared schemas instead of defining Zod schemas in feature tests.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];
