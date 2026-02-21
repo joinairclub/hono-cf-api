@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { trimmedStringSchema } from "../../../shared/schemas/string";
+import { trimmedStringSchema } from "@/shared/schemas/string";
 
 const tiktokShareUrlSchema = trimmedStringSchema.pipe(
   z.url({

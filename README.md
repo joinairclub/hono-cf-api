@@ -120,6 +120,11 @@ Notes:
 
 Use `bun run test` instead of `bun test` to avoid executing vendored tests under `opensrc/`.
 
+## Imports
+
+- Use `@/...` absolute imports for internal modules under `src/`.
+- Relative imports like `./...` and `../...` are disallowed by lint rules.
+
 ## Deployment Model
 
 - PR checks run in GitHub Actions: `.github/workflows/ci.yml`

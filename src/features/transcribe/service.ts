@@ -1,10 +1,10 @@
-import { transcribeWithWorkersAi } from "../../integrations/workers-ai/client";
+import type { TranscribeAudioResponse } from "@/features/transcribe/schema";
+import { transcribeWithWorkersAi } from "@/integrations/workers-ai/client";
 import type {
   WorkersAiClientError,
-} from "../../integrations/workers-ai/client";
-import { ConfigurationError } from "../../shared/errors/app-error";
-import { Result } from "../../shared/result";
-import type { TranscribeAudioResponse } from "./schema";
+} from "@/integrations/workers-ai/client";
+import { ConfigurationError } from "@/shared/errors/app-error";
+import { Result } from "@/shared/result";
 
 export type TranscribeServiceError =
   | ConfigurationError

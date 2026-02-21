@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { UpstreamResponseError } from "../../shared/errors/app-error";
-import { Result } from "../../shared/result";
-import { optionalTrimmedStringSchema, trimmedStringSchema } from "../../shared/schemas/string";
+import { UpstreamResponseError } from "@/shared/errors/app-error";
+import { Result } from "@/shared/result";
+import { optionalTrimmedStringSchema, trimmedStringSchema } from "@/shared/schemas/string";
 
 const timeSecondSchema = z
   .number()

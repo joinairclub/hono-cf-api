@@ -1,9 +1,9 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import { respond } from "../../app/respond";
-import { connectDb } from "../../db/connect";
-import { createPost, listPosts } from "./repository";
-import { createPostSchema } from "./schema";
+import { respond } from "@/app/respond";
+import { connectDb } from "@/db/connect";
+import { createPost, listPosts } from "@/features/posts/repository";
+import { createPostSchema } from "@/features/posts/schema";
 
 export const postsRoutes = new Hono<{ Bindings: Env }>();
 

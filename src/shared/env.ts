@@ -1,5 +1,5 @@
-import { ConfigurationError } from "./errors/app-error";
-import { Result } from "./result";
+import { ConfigurationError } from "@/shared/errors/app-error";
+import { Result } from "@/shared/result";
 
 export const getRequiredBindingString = (
   env: object,

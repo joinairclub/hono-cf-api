@@ -1,5 +1,5 @@
 import type { ContentfulStatusCode } from "hono/utils/http-status";
-import { TaggedError, matchError } from "../result";
+import { TaggedError, matchError } from "@/shared/result";
 
 export class DbConnectionError extends TaggedError("DbConnectionError")<{
   message: string;

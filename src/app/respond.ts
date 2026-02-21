@@ -1,8 +1,8 @@
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
-import type { AppError } from "../shared/errors/app-error";
-import { toApiError } from "../shared/errors/app-error";
-import { Result } from "../shared/result";
+import type { AppError } from "@/shared/errors/app-error";
+import { toApiError } from "@/shared/errors/app-error";
+import { Result } from "@/shared/result";
 
 export type AppResponder = <T, E extends AppError>(
   c: Context,

@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { workersAiTranscriptionResponseSchema } from "../../integrations/workers-ai/schema";
-import { trimmedStringSchema } from "../../shared/schemas/string";
+import { workersAiTranscriptionResponseSchema } from "@/integrations/workers-ai/schema";
+import { trimmedStringSchema } from "@/shared/schemas/string";
 
 const audioUrlSchema = trimmedStringSchema.pipe(
   z.url({

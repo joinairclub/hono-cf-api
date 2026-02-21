@@ -10,6 +10,19 @@ export default [
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["./*", "../*"],
+              message: "Use @/... absolute imports for internal modules.",
+            },
+          ],
+        },
+      ],
+    },
   },
   {
     files: ["src/features/**/*.test.ts"],
@@ -21,6 +34,12 @@ export default [
             {
               name: "zod",
               message: "Import feature/shared schemas instead of defining Zod schemas in feature tests.",
+            },
+          ],
+          patterns: [
+            {
+              group: ["./*", "../*"],
+              message: "Use @/... absolute imports for internal modules.",
             },
           ],
         },

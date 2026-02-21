@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { apiErrorResponseSchema } from "../shared/schemas/api-response";
-import { createApp } from "./create-app";
+import { createApp } from "@/app/create-app";
+import { apiErrorResponseSchema } from "@/shared/schemas/api-response";
 
 describe("create app routes", () => {
   it("returns ping", async () => {

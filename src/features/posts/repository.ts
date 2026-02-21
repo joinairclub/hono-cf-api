@@ -1,10 +1,10 @@
 import { desc } from "drizzle-orm";
-import type { Db } from "../../db/client";
-import { posts as postsTable } from "../../db/schema";
-import type { Post } from "../../db/schema";
-import { DbQueryError } from "../../shared/errors/app-error";
-import { Result } from "../../shared/result";
-import type { CreatePostInput } from "./schema";
+import type { Db } from "@/db/client";
+import { posts as postsTable } from "@/db/schema";
+import type { Post } from "@/db/schema";
+import type { CreatePostInput } from "@/features/posts/schema";
+import { DbQueryError } from "@/shared/errors/app-error";
+import { Result } from "@/shared/result";
 
 export const listPosts = (
   db: Db,

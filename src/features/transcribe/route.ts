@@ -1,8 +1,8 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import { respond } from "../../app/respond";
-import { transcribeAudioRequestSchema } from "./schema";
-import { transcribeAudioUrl } from "./service";
+import { respond } from "@/app/respond";
+import { transcribeAudioRequestSchema } from "@/features/transcribe/schema";
+import { transcribeAudioUrl } from "@/features/transcribe/service";
 
 export const transcribeRoutes = new Hono<{ Bindings: Env }>();
 

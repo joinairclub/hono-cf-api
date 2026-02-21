@@ -1,8 +1,8 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import { respond } from "../../../app/respond";
-import { tiktokShareUrlQuerySchema } from "./schema";
-import { resolveTikTokInfo } from "./service";
+import { respond } from "@/app/respond";
+import { tiktokShareUrlQuerySchema } from "@/features/tiktok/video/schema";
+import { resolveTikTokInfo } from "@/features/tiktok/video/service";
 
 export const tiktokVideoRoutes = new Hono<{ Bindings: Env }>();
 

@@ -1,11 +1,11 @@
 import { Buffer } from "node:buffer";
+import { extractWorkersAiTranscription } from "@/integrations/workers-ai/schema";
+import type { WorkersAiTranscription } from "@/integrations/workers-ai/schema";
 import {
   UpstreamRequestError,
   UpstreamResponseError,
-} from "../../shared/errors/app-error";
-import { Result } from "../../shared/result";
-import { extractWorkersAiTranscription } from "./schema";
-import type { WorkersAiTranscription } from "./schema";
+} from "@/shared/errors/app-error";
+import { Result } from "@/shared/result";
 
 const WORKERS_AI_TRANSCRIBE_MODEL = "@cf/openai/whisper-large-v3-turbo";
 const WORKERS_AI_SERVICE = "WorkersAi";

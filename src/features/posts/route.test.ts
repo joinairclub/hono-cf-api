@@ -1,17 +1,17 @@
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Db } from "../../db/client";
-import { DbQueryError } from "../../shared/errors/app-error";
-import { Result } from "../../shared/result";
-import {
-  apiErrorResponseSchema,
-  apiSuccessResponseSchema,
-} from "../../shared/schemas/api-response";
-import { postsRoutes } from "./route";
+import type { Db } from "@/db/client";
+import { postsRoutes } from "@/features/posts/route";
 import {
   listPostsResponseDataSchema,
   postResponseSchema,
-} from "./schema";
+} from "@/features/posts/schema";
+import { DbQueryError } from "@/shared/errors/app-error";
+import { Result } from "@/shared/result";
+import {
+  apiErrorResponseSchema,
+  apiSuccessResponseSchema,
+} from "@/shared/schemas/api-response";
 
 const mockDb = {} as Db;
 const mockClient = {
@@ -25,11 +25,11 @@ const mocks = vi.hoisted(() => ({
   createPost: vi.fn(),
 }));
 
-vi.mock("../../db/client", () => ({
+vi.mock("@/db/client", () => ({
   createDbClient: mocks.createDbClient,
 }));
 
-vi.mock("./repository", () => ({
+vi.mock("@/features/posts/repository", () => ({
   listPosts: mocks.listPosts,
   createPost: mocks.createPost,
 }));

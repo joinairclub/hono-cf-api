@@ -1,9 +1,9 @@
-import { fetchTikHubProfileInfo } from "../../../integrations/tikhub/client";
-import type { TikHubClientError } from "../../../integrations/tikhub/client";
-import { getRequiredBindingString } from "../../../shared/env";
-import type { ConfigurationError } from "../../../shared/errors/app-error";
-import type { Result } from "../../../shared/result";
-import type { TikTokProfileResult } from "./schema";
+import type { TikTokProfileResult } from "@/features/tiktok/profile/schema";
+import { fetchTikHubProfileInfo } from "@/integrations/tikhub/client";
+import type { TikHubClientError } from "@/integrations/tikhub/client";
+import { getRequiredBindingString } from "@/shared/env";
+import type { ConfigurationError } from "@/shared/errors/app-error";
+import type { Result } from "@/shared/result";
 
 export type TikTokProfileServiceError = ConfigurationError | TikHubClientError;
 

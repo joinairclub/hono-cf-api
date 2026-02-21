@@ -1,12 +1,12 @@
 import { Hono } from "hono";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { tiktokProfileResultSchema } from "@/features/tiktok/profile/schema";
+import { tiktokRoutes } from "@/features/tiktok/route";
+import { tiktokInfoResultSchema } from "@/features/tiktok/video/schema";
 import {
   apiErrorResponseSchema,
   apiSuccessResponseSchema,
-} from "../../shared/schemas/api-response";
-import { tiktokProfileResultSchema } from "./profile/schema";
-import { tiktokRoutes } from "./route";
-import { tiktokInfoResultSchema } from "./video/schema";
+} from "@/shared/schemas/api-response";
 
 const createTestApp = () => {
   const app = new Hono<{ Bindings: Env }>();
