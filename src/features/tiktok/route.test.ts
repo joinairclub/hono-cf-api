@@ -34,6 +34,14 @@ const tiktokProfileResponseSchema = z.object({
   error: z.null(),
 });
 
+const apiErrorResponseSchema = z.object({
+  data: z.null(),
+  error: z.object({
+    message: z.string(),
+    code: z.string(),
+  }),
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -323,7 +331,7 @@ describe("tiktok routes", () => {
     );
 
     expect(response.status).toBe(502);
-    const body = (await response.json()) as { error: { code: string } };
+    const body = apiErrorResponseSchema.parse(await response.json());
     expect(body.error.code).toBe("UpstreamResponseError");
   });
 
@@ -344,7 +352,7 @@ describe("tiktok routes", () => {
     );
 
     expect(response.status).toBe(502);
-    const body = (await response.json()) as { error: { code: string } };
+    const body = apiErrorResponseSchema.parse(await response.json());
     expect(body.error.code).toBe("UpstreamRequestError");
   });
 
@@ -376,7 +384,7 @@ describe("tiktok routes", () => {
     );
 
     expect(response.status).toBe(502);
-    const body = (await response.json()) as { error: { code: string } };
+    const body = apiErrorResponseSchema.parse(await response.json());
     expect(body.error.code).toBe("UpstreamResponseError");
   });
 
@@ -394,7 +402,7 @@ describe("tiktok routes", () => {
     );
 
     expect(response.status).toBe(502);
-    const body = (await response.json()) as { error: { code: string } };
+    const body = apiErrorResponseSchema.parse(await response.json());
     expect(body.error.code).toBe("UpstreamResponseError");
   });
 
@@ -418,7 +426,7 @@ describe("tiktok routes", () => {
     );
 
     expect(response.status).toBe(502);
-    const body = (await response.json()) as { error: { code: string } };
+    const body = apiErrorResponseSchema.parse(await response.json());
     expect(body.error.code).toBe("UpstreamResponseError");
   });
 });

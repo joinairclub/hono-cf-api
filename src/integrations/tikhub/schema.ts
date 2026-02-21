@@ -261,7 +261,7 @@ export const extractTikHubVideoInfo = (
     getFirstUrl(firstDetail?.music?.play_url) ??
     getFirstUrl(firstDetail?.added_sound_music_info?.play_url);
 
-  return Result.ok({
+  const normalizedVideoInfo = {
     awemeId,
     description,
     durationMs,
@@ -284,7 +284,19 @@ export const extractTikHubVideoInfo = (
       getFirstUrl(video?.dynamic_cover),
     audioUrl,
     downloadUrl,
-  } satisfies TikHubVideoInfo);
+  } satisfies TikHubVideoInfo;
+
+  const normalized = tikhubVideoInfoSchema.safeParse(normalizedVideoInfo);
+  if (!normalized.success) {
+    return Result.err(
+      new UpstreamResponseError({
+        service: "TikHub",
+        message: "TikHub video normalization mismatch",
+      }),
+    );
+  }
+
+  return Result.ok(normalized.data);
 };
 
 export const extractTikHubProfileInfo = (
@@ -311,7 +323,7 @@ export const extractTikHubProfileInfo = (
   const videoCount = statsV2?.videoCount ?? stats?.videoCount ?? null;
   const friendCount = statsV2?.friendCount ?? stats?.friendCount ?? null;
 
-  return Result.ok({
+  const normalizedProfileInfo = {
     userId: user.id ?? null,
     username: user.uniqueId ?? null,
     secUserId: user.secUid ?? null,
@@ -332,5 +344,17 @@ export const extractTikHubProfileInfo = (
       videoCount,
       friendCount,
     },
-  } satisfies TikHubProfileInfo);
+  } satisfies TikHubProfileInfo;
+
+  const normalized = tikhubProfileInfoSchema.safeParse(normalizedProfileInfo);
+  if (!normalized.success) {
+    return Result.err(
+      new UpstreamResponseError({
+        service: "TikHub",
+        message: "TikHub profile normalization mismatch",
+      }),
+    );
+  }
+
+  return Result.ok(normalized.data);
 };
