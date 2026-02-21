@@ -181,4 +181,52 @@ describe("posts routes", () => {
 
     expect(response.status).toBe(400);
   });
+
+  it("returns 400 for whitespace-only title", async () => {
+    const app = createTestApp();
+    const response = await app.request(
+      "/api/posts",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title: "   ", body: "Valid body" }),
+      },
+      mockEnv,
+      mockExecutionCtx,
+    );
+
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 400 for title exceeding 300 characters", async () => {
+    const app = createTestApp();
+    const response = await app.request(
+      "/api/posts",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title: "a".repeat(301), body: "Valid body" }),
+      },
+      mockEnv,
+      mockExecutionCtx,
+    );
+
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 400 for body exceeding 50000 characters", async () => {
+    const app = createTestApp();
+    const response = await app.request(
+      "/api/posts",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title: "Valid title", body: "a".repeat(50_001) }),
+      },
+      mockEnv,
+      mockExecutionCtx,
+    );
+
+    expect(response.status).toBe(400);
+  });
 });

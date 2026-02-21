@@ -5,6 +5,7 @@ import { trimmedStringSchema } from "../../shared/schemas/string";
 const audioUrlSchema = trimmedStringSchema.pipe(
   z.url({
     protocol: /^https?$/,
+    message: "audioUrl must be a valid HTTP or HTTPS URL",
   }),
 );
 
