@@ -22,6 +22,20 @@ export const optionalTrimmedStringSchema = z.preprocess(
   z.string().optional(),
 );
 
+/** Coerce an API value that may arrive as a number or string into a trimmed string. */
+export const normalizeStringValue = (value: unknown): string | undefined => {
+  if (typeof value === "string") {
+    const normalized = normalizeOptionalTrimmedString(value);
+    return typeof normalized === "string" ? normalized : undefined;
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? String(value) : undefined;
+  }
+
+  return undefined;
+};
+
 const TRUE_BOOLEAN_LITERALS = new Set(["true", "1"]);
 const FALSE_BOOLEAN_LITERALS = new Set(["false", "0"]);
 

@@ -258,4 +258,167 @@ describe("tiktok routes", () => {
       },
     });
   });
+
+  it("returns 500 when tikhub token is missing for profile", async () => {
+    const app = createTestApp();
+    const envWithoutToken = {
+      HYPERDRIVE: {
+        connectionString: "postgresql://example",
+      },
+    } as unknown as Env;
+
+    const response = await app.request(
+      "/api/tiktok/profile?username=tiktok",
+      undefined,
+      envWithoutToken,
+      mockExecutionCtx,
+    );
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({
+      data: null,
+      error: {
+        message: "Server configuration error",
+        code: "ConfigurationError",
+      },
+    });
+  });
+
+  it("returns 400 for empty username", async () => {
+    const app = createTestApp();
+    const response = await app.request("/api/tiktok/profile?username=");
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 400 for whitespace-only username", async () => {
+    const app = createTestApp();
+    const response = await app.request("/api/tiktok/profile?username=%20%20");
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 400 for username exceeding 64 characters", async () => {
+    const app = createTestApp();
+    const longUsername = "a".repeat(65);
+    const response = await app.request(`/api/tiktok/profile?username=${longUsername}`);
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 400 for username with invalid characters", async () => {
+    const app = createTestApp();
+    const response = await app.request("/api/tiktok/profile?username=user%20name!");
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 502 when tikhub returns non-200 for video", async () => {
+    const app = createTestApp();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("Rate limited", { status: 429 }),
+    );
+
+    const response = await app.request(
+      "/api/tiktok/info?share_url=https://www.tiktok.com/@user/video/123",
+      undefined,
+      mockEnv,
+      mockExecutionCtx,
+    );
+
+    expect(response.status).toBe(502);
+    const body = (await response.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("UpstreamResponseError");
+  });
+
+  it("returns 502 when tikhub returns malformed json", async () => {
+    const app = createTestApp();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("not json {{{", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const response = await app.request(
+      "/api/tiktok/info?share_url=https://www.tiktok.com/@user/video/123",
+      undefined,
+      mockEnv,
+      mockExecutionCtx,
+    );
+
+    expect(response.status).toBe(502);
+    const body = (await response.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("UpstreamRequestError");
+  });
+
+  it("returns 502 when tikhub response has no download url", async () => {
+    const app = createTestApp();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            aweme_detail: {
+              aweme_id: "123",
+              desc: "test",
+              video: {},
+            },
+          },
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      ),
+    );
+
+    const response = await app.request(
+      "/api/tiktok/info?share_url=https://www.tiktok.com/@user/video/123",
+      undefined,
+      mockEnv,
+      mockExecutionCtx,
+    );
+
+    expect(response.status).toBe(502);
+    const body = (await response.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("UpstreamResponseError");
+  });
+
+  it("returns 502 when tikhub returns non-200 for profile", async () => {
+    const app = createTestApp();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("Internal Server Error", { status: 500 }),
+    );
+
+    const response = await app.request(
+      "/api/tiktok/profile?username=tiktok",
+      undefined,
+      mockEnv,
+      mockExecutionCtx,
+    );
+
+    expect(response.status).toBe(502);
+    const body = (await response.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("UpstreamResponseError");
+  });
+
+  it("returns 502 when tikhub profile response has no userInfo", async () => {
+    const app = createTestApp();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({ data: {} }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      ),
+    );
+
+    const response = await app.request(
+      "/api/tiktok/profile?username=tiktok",
+      undefined,
+      mockEnv,
+      mockExecutionCtx,
+    );
+
+    expect(response.status).toBe(502);
+    const body = (await response.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("UpstreamResponseError");
+  });
 });

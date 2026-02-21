@@ -1,38 +1,8 @@
 import { z } from "zod";
 import { UpstreamResponseError } from "../../shared/errors/app-error";
 import { Result } from "../../shared/result";
-import { normalizeOptionalBoolean, normalizeOptionalTrimmedString } from "../../shared/schemas/string";
-
-const normalizeNumberValue = (value: unknown): number | undefined => {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : undefined;
-  }
-
-  if (typeof value !== "string") {
-    return undefined;
-  }
-
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return undefined;
-  }
-
-  const parsed = Number(trimmed);
-  return Number.isFinite(parsed) ? parsed : undefined;
-};
-
-const normalizeStringValue = (value: unknown): string | undefined => {
-  if (typeof value === "string") {
-    const normalized = normalizeOptionalTrimmedString(value);
-    return typeof normalized === "string" ? normalized : undefined;
-  }
-
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? String(value) : undefined;
-  }
-
-  return undefined;
-};
+import { normalizeNumberValue } from "../../shared/schemas/number";
+import { normalizeOptionalBoolean, normalizeStringValue } from "../../shared/schemas/string";
 
 const numericFieldSchema = z.preprocess(normalizeNumberValue, z.number());
 const stringFieldSchema = z.preprocess(normalizeStringValue, z.string().min(1));
@@ -134,50 +104,54 @@ const tikhubProfileResponseSchema = z.looseObject({
   }),
 });
 
-export interface TikHubVideoInfo {
-  awemeId: string;
-  description: string | null;
-  durationMs: number | null;
-  createdAt: string | null;
-  hashtags: string[];
-  author: {
-    userId: string | null;
-    username: string | null;
-    nickname: string | null;
-  };
-  stats: {
-    playCount: number | null;
-    likeCount: number | null;
-    commentCount: number | null;
-    shareCount: number | null;
-  };
-  thumbnailUrl: string | null;
-  audioUrl: string | null;
-  downloadUrl: string;
-}
+const tikhubVideoInfoSchema = z.object({
+  awemeId: z.string(),
+  description: z.string().nullable(),
+  durationMs: z.number().nullable(),
+  createdAt: z.string().nullable(),
+  hashtags: z.array(z.string()),
+  author: z.object({
+    userId: z.string().nullable(),
+    username: z.string().nullable(),
+    nickname: z.string().nullable(),
+  }),
+  stats: z.object({
+    playCount: z.number().nullable(),
+    likeCount: z.number().nullable(),
+    commentCount: z.number().nullable(),
+    shareCount: z.number().nullable(),
+  }),
+  thumbnailUrl: z.string().nullable(),
+  audioUrl: z.string().nullable(),
+  downloadUrl: z.string(),
+});
 
-export interface TikHubProfileInfo {
-  userId: string | null;
-  username: string | null;
-  secUserId: string | null;
-  nickname: string | null;
-  verified: boolean | null;
-  avatarThumbUrl: string | null;
-  avatarMediumUrl: string | null;
-  avatarLargeUrl: string | null;
-  bio: string | null;
-  bioLink: string | null;
-  category: string | null;
-  createdTime: number | null;
-  createdAt: string | null;
-  stats: {
-    followerCount: number | null;
-    followingCount: number | null;
-    likeCount: number | null;
-    videoCount: number | null;
-    friendCount: number | null;
-  };
-}
+export type TikHubVideoInfo = z.infer<typeof tikhubVideoInfoSchema>;
+
+const tikhubProfileInfoSchema = z.object({
+  userId: z.string().nullable(),
+  username: z.string().nullable(),
+  secUserId: z.string().nullable(),
+  nickname: z.string().nullable(),
+  verified: z.boolean().nullable(),
+  avatarThumbUrl: z.string().nullable(),
+  avatarMediumUrl: z.string().nullable(),
+  avatarLargeUrl: z.string().nullable(),
+  bio: z.string().nullable(),
+  bioLink: z.string().nullable(),
+  category: z.string().nullable(),
+  createdTime: z.number().nullable(),
+  createdAt: z.string().nullable(),
+  stats: z.object({
+    followerCount: z.number().nullable(),
+    followingCount: z.number().nullable(),
+    likeCount: z.number().nullable(),
+    videoCount: z.number().nullable(),
+    friendCount: z.number().nullable(),
+  }),
+});
+
+export type TikHubProfileInfo = z.infer<typeof tikhubProfileInfoSchema>;
 
 const getFirstUrl = (
   address: z.infer<typeof tikhubAddressSchema> | undefined,
@@ -199,12 +173,17 @@ const extractHashtagsFromDescription = (description: string | null): string[] =>
   }
 
   return (
-    description.match(/#[A-Za-z0-9_]+/g)?.map((tag) => tag.slice(1)).filter(Boolean) ?? []
+    description.match(/#[\p{L}\p{N}_]+/gu)?.map((tag) => tag.slice(1)).filter(Boolean) ?? []
   );
 };
 
 const normalizeHashtag = (tag: string): string => tag.replace(/^#/, "").trim().toLowerCase();
 
+/**
+ * TikHub returns duration in milliseconds (>= 1000) or seconds (< 1000).
+ * All known TikTok videos are at least one second long, so values under
+ * 1000 are assumed to be in seconds and converted to milliseconds.
+ */
 const normalizeDurationMs = (value: number | undefined): number | null => {
   if (value === undefined) {
     return null;
@@ -252,7 +231,15 @@ export const extractTikHubVideoInfo = (
     );
   }
 
-  const awemeId = firstDetail?.aweme_id ?? firstDetail?.aweme_id_str ?? crypto.randomUUID();
+  const awemeId = firstDetail?.aweme_id ?? firstDetail?.aweme_id_str;
+  if (!awemeId) {
+    return Result.err(
+      new UpstreamResponseError({
+        service: "TikHub",
+        message: "TikHub response does not contain a video ID",
+      }),
+    );
+  }
 
   const hashtagsFromTopics =
     firstDetail?.cha_list
@@ -297,7 +284,7 @@ export const extractTikHubVideoInfo = (
       getFirstUrl(video?.dynamic_cover),
     audioUrl,
     downloadUrl,
-  });
+  } satisfies TikHubVideoInfo);
 };
 
 export const extractTikHubProfileInfo = (
@@ -345,5 +332,5 @@ export const extractTikHubProfileInfo = (
       videoCount,
       friendCount,
     },
-  });
+  } satisfies TikHubProfileInfo);
 };
